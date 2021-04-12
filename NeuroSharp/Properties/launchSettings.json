@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "NeuroSharp": {
+      "commandName": "Executable",
+      "executablePath": "C:\\_Programming\\Repos\\NeuroSharp\\NeuroSharp\\UnityBuild.bat",
+      "workingDirectory": "C:\\_Programming\\Repos\\NeuroSharp"
+    }
+  }
+}
