@@ -22,54 +22,18 @@ namespace NeuroSharp.Tests
         [InlineData(99, 99)]
         public void Constructor_Normal_Works(int rows, int columns)
         {
-            var matrix = new Matrix<int>(rows, columns);
+            var matrix = new BaseMatrix<int>(rows, columns);
 
             Assert.Equal(matrix.Rows, rows);
 
             Assert.Equal(matrix.Columns, columns);
         }
 
-        [Theory]
-        [InlineData(0, 0)]
-        [InlineData(-1, 0)]
-        [InlineData(0, -1)]
-        [InlineData(1, 0)]
-        [InlineData(0, 1)]
-        [InlineData(int.MinValue, int.MinValue)]
-        [InlineData(1, int.MinValue)]
-        [InlineData(int.MinValue, 1)]
-        [InlineData(int.MaxValue, int.MaxValue)]
-        [InlineData(1, int.MaxValue)]
-        [InlineData(int.MaxValue, 1)]
-        public void Constructor_Normal_Throws_Index(int rows, int columns)
-        {
-            // matrix should throw in certain circumstances
-            void ShouldThrow()
-            {
-                var matrix = new Matrix<float>(rows, columns);
-            }
-
-            Assert.Throws<ArgumentOutOfRangeException>(ShouldThrow);
-        }
-
-        [Theory]
-        [InlineData(2_147_000_000, 2_147_000_000)]
-        public void Constructor_Normal_Throws_Memory(int rows, int columns)
-        {
-            // matrix should throw in certain circumstances
-            void ShouldThrow()
-            {
-                var matrix = new Matrix<float>(rows, columns);
-            }
-
-            Assert.Throws<OutOfMemoryException>(ShouldThrow);
-        }
-
         [Fact]
         public void Constructor_Normal_FillsDefault()
         {
             // it should be expected that when we create a new matrix all the values are defaulted to not-null
-            var matrix = new Matrix<int>(10, 10);
+            var matrix = new BaseMatrix<int>(10, 10);
 
             foreach (var row in matrix)
             {
@@ -79,7 +43,7 @@ namespace NeuroSharp.Tests
                 }
             }
 
-            var floatMatrix = new Matrix<float>(10, 10);
+            var floatMatrix = new BaseMatrix<float>(10, 10);
 
             foreach (var row in floatMatrix)
             {
@@ -89,7 +53,7 @@ namespace NeuroSharp.Tests
                 }
             }
 
-            var decimalmatrix = new Matrix<decimal>(10, 10);
+            var decimalmatrix = new BaseMatrix<decimal>(10, 10);
 
             foreach (var row in decimalmatrix)
             {
@@ -99,7 +63,7 @@ namespace NeuroSharp.Tests
                 }
             }
 
-            var byteMatrix = new Matrix<byte>(10, 10);
+            var byteMatrix = new BaseMatrix<byte>(10, 10);
 
             foreach (var row in byteMatrix)
             {
@@ -109,7 +73,7 @@ namespace NeuroSharp.Tests
                 }
             }
 
-            var doubleMatrix = new Matrix<double>(10, 10);
+            var doubleMatrix = new BaseMatrix<double>(10, 10);
 
             foreach (var row in doubleMatrix)
             {
@@ -118,7 +82,7 @@ namespace NeuroSharp.Tests
                     Assert.Equal(default, element);
                 }
             }
-            var sbyteMatrix = new Matrix<sbyte>(10, 10);
+            var sbyteMatrix = new BaseMatrix<sbyte>(10, 10);
 
             foreach (var row in sbyteMatrix)
             {
@@ -127,7 +91,7 @@ namespace NeuroSharp.Tests
                     Assert.Equal(default, element);
                 }
             }
-            var shortMatrix = new Matrix<short>(10, 10);
+            var shortMatrix = new BaseMatrix<short>(10, 10);
 
             foreach (var row in shortMatrix)
             {
@@ -136,7 +100,7 @@ namespace NeuroSharp.Tests
                     Assert.Equal(default, element);
                 }
             }
-            var ushortMatrix = new Matrix<ushort>(10, 10);
+            var ushortMatrix = new BaseMatrix<ushort>(10, 10);
 
             foreach (var row in ushortMatrix)
             {
@@ -145,7 +109,7 @@ namespace NeuroSharp.Tests
                     Assert.Equal(default, element);
                 }
             }
-            var uintMatrix = new Matrix<uint>(10, 10);
+            var uintMatrix = new BaseMatrix<uint>(10, 10);
 
             foreach (var row in uintMatrix)
             {
@@ -154,7 +118,7 @@ namespace NeuroSharp.Tests
                     Assert.Equal(default, element);
                 }
             }
-            var longMatrix = new Matrix<long>(10, 10);
+            var longMatrix = new BaseMatrix<long>(10, 10);
 
             foreach (var row in longMatrix)
             {
@@ -164,7 +128,7 @@ namespace NeuroSharp.Tests
                 }
             }
 
-            var ulongMatrix = new Matrix<ulong>(10, 10);
+            var ulongMatrix = new BaseMatrix<ulong>(10, 10);
 
             foreach (var row in ulongMatrix)
             {
@@ -186,7 +150,7 @@ namespace NeuroSharp.Tests
         [InlineData(1_000_000_000)]
         public void Constructor_Fill_FillsDefault(int data)
         {
-            var matrix = new Matrix<int>(10, 10, data);
+            var matrix = new BaseMatrix<int>(10, 10, data);
 
             foreach (var row in matrix)
             {
@@ -210,7 +174,7 @@ namespace NeuroSharp.Tests
                 return called_n_times;
             }
 
-            var matrix = new Matrix<int>(10, 10, TestCallMethod);
+            var matrix = new BaseMatrix<int>(10, 10, TestCallMethod);
 
             Assert.True(called);
 
@@ -230,7 +194,7 @@ namespace NeuroSharp.Tests
                 return row;
             }
 
-            var matrix = new Matrix<int>(10, 10, TestCallMethod);
+            var matrix = new BaseMatrix<int>(10, 10, TestCallMethod);
 
             Assert.True(called);
 
@@ -270,7 +234,7 @@ namespace NeuroSharp.Tests
                 return row + column;
             }
 
-            var matrix = new Matrix<int>(10, 10, TestCallMethod);
+            var matrix = new BaseMatrix<int>(10, 10, TestCallMethod);
 
             Assert.True(called);
 
@@ -307,7 +271,7 @@ namespace NeuroSharp.Tests
                 enumerable[i] = i * 0.5f;
             }
 
-            var matrix = new Matrix<float>(10, 10, enumerable);
+            var matrix = new BaseMatrix<float>(10, 10, enumerable);
 
             /*
              Should expect:
@@ -326,7 +290,7 @@ namespace NeuroSharp.Tests
                 return null;
             }
 
-            var stringMatrix = new Matrix<decimal>(10, 10, NullEnumberable());
+            var stringMatrix = new BaseMatrix<decimal>(10, 10, NullEnumberable());
 
             foreach (var row in stringMatrix)
             {
@@ -343,7 +307,7 @@ namespace NeuroSharp.Tests
                 yield return 30;
             }
 
-            Matrix<int> boolMatrix = new(10, 10, GetInts());
+            BaseMatrix<int> boolMatrix = new(10, 10, GetInts());
 
             // if the enumerable runs out it should still fill the values
 
@@ -371,7 +335,7 @@ namespace NeuroSharp.Tests
         public void Indexing_ProperlyMapped()
         {
             // verify that the indexing of the matrix appropriately retrieves and sets the correct items
-            var matrix = new Matrix<int>(10, 10);
+            var matrix = new BaseMatrix<int>(10, 10);
 
             // use jagged indices
             Assert.False(matrix[5, 5] == 1);
@@ -416,7 +380,7 @@ namespace NeuroSharp.Tests
         [Fact]
         public void Capacity_ProperlySets()
         {
-            var matrix = new Matrix<int>(10, 10);
+            var matrix = new BaseMatrix<int>(10, 10);
 
             Assert.Equal(100, matrix.Capacity);
         }
@@ -426,7 +390,7 @@ namespace NeuroSharp.Tests
         {
             // make sure the matrix rotats correctly
             int x = 0;
-            var matrix = new Matrix<int>(2, 3, () => x++);
+            var matrix = new BaseMatrix<int>(2, 3, () => x++);
             // expected 
             /*
                 0 1 2
@@ -457,6 +421,123 @@ namespace NeuroSharp.Tests
             Assert.Equal(4, tranposedMatrix[1, 1]);
             Assert.Equal(2, tranposedMatrix[2, 0]);
             Assert.Equal(5, tranposedMatrix[2, 1]);
+
+            // test As Transformed
+            Assert.Equal(0, matrix.Transposed[0, 0]);
+            Assert.Equal(3, matrix.Transposed[0, 1]);
+            Assert.Equal(1, matrix.Transposed[1, 0]);
+            Assert.Equal(4, matrix.Transposed[1, 1]);
+            Assert.Equal(2, matrix.Transposed[2, 0]);
+            Assert.Equal(5, matrix.Transposed[2, 1]);
+        }
+
+        [Fact]
+        public void AsTransposedWorks()
+        {
+            // make sure the matrix rotats correctly
+            int x = 0;
+            var matrix = new BaseMatrix<int>(2, 3, () => x++);
+            // expected 
+            /*
+                0 1 2
+                3 4 5
+            */
+
+            // make sure the matrix was correly instantiated
+            Assert.Equal(0, matrix[0, 0]);
+            Assert.Equal(1, matrix[0, 1]);
+            Assert.Equal(2, matrix[0, 2]);
+            Assert.Equal(3, matrix[1, 0]);
+            Assert.Equal(4, matrix[1, 1]);
+            Assert.Equal(5, matrix[1, 2]);
+
+            Assert.Equal(3, matrix.Columns);
+            Assert.Equal(2, matrix.Rows);
+
+            /*
+                Expected
+            
+                0 3
+                1 4
+                2 5
+            */
+
+            Assert.Equal(2, matrix.Transposed.Columns);
+            Assert.Equal(3, matrix.Transposed.Rows);
+
+            // test As Transformed
+            Assert.Equal(0, matrix.Transposed[0, 0]);
+            Assert.Equal(3, matrix.Transposed[0, 1]);
+            Assert.Equal(1, matrix.Transposed[1, 0]);
+            Assert.Equal(4, matrix.Transposed[1, 1]);
+            Assert.Equal(2, matrix.Transposed[2, 0]);
+            Assert.Equal(5, matrix.Transposed[2, 1]);
+        }
+
+        [Fact]
+        public void AsTransposedIterable()
+        {
+            // make sure we can construct a for and a foreach loop
+            var matrix = new BaseMatrix<int>(3, 2, (r, c) => r + c);
+
+            // make sure the values mapped correctly
+            for (int row = 0; row < matrix.Rows; row++)
+            {
+                for (int column = 0; column < matrix.Columns; column++)
+                {
+                    Assert.Equal(row + column, matrix[row, column]);
+                }
+            }
+
+            // try to iterate as a transposed version
+            for (int row = 0; row < matrix.Transposed.Rows; row++)
+            {
+                for (int column = 0; column < matrix.Transposed.Columns; column++)
+                {
+                    Assert.Equal(row + column, matrix.Transposed[row, column]);
+                }
+            }
+
+            /*
+                Normal:
+                0 1
+                1 2
+                2 3
+                Expected:
+                0 1 2
+                1 2 3
+            */
+
+            // make sure manually to double check
+            Assert.Equal(0, matrix.Transposed[0, 0]);
+            Assert.Equal(1, matrix.Transposed[0, 1]);
+            Assert.Equal(2, matrix.Transposed[0, 2]);
+            Assert.Equal(1, matrix.Transposed[1, 0]);
+            Assert.Equal(2, matrix.Transposed[1, 1]);
+            Assert.Equal(3, matrix.Transposed[1, 2]);
+        }
+
+        [Fact]
+        public void TransposedMatrix_DuplicateWorks()
+        {
+            var matrix = new BaseMatrix<int>(2, 2, new int[] { 1, 2, 3, 4 });
+
+            // verify that the duplicated matrix is transposed AND not a reference
+            var dupe = matrix.Transposed.Duplicate();
+
+            /*
+                Expected
+            
+                1 3
+                2 4
+            */
+
+            Assert.Equal(1, dupe[0, 0]);
+            Assert.Equal(3, dupe[0, 1]);
+            Assert.Equal(2, dupe[1, 0]);
+            Assert.Equal(4, dupe[1, 1]);
+
+
         }
 
         [Fact]
@@ -464,16 +545,16 @@ namespace NeuroSharp.Tests
         {
             System.Random random = new();
 
-            var sourceMatrix = new Matrix<int>(100, 100, () => random.Next(int.MinValue >> 3, int.MaxValue >> 3));
+            var sourceMatrix = new BaseMatrix<int>(100, 100, () => random.Next(int.MinValue >> 3, int.MaxValue >> 3));
 
-            int[] nums = sourceMatrix.ToArray();
+            int[] nums = sourceMatrix.ToOneDimension();
 
-            var matrix = new Matrix<int>(100, 100, nums);
+            var matrix = new BaseMatrix<int>(100, 100, nums);
 
             // make sure the list mapped correctly by sampling one number
             Assert.Equal(nums[10], matrix[0][10]);
 
-            matrix.ApplyMemberWiseOperation((ref int x) => x *= 2);
+            matrix.PerformMemberWise((ref int x) => x *= 2);
 
             // iterate through the matrix and verify that the memberwise function applied correctly
             for (int row = 0; row < 100; row++)
@@ -488,7 +569,7 @@ namespace NeuroSharp.Tests
         [Fact]
         public void DuplicateWorks()
         {
-            var matrix = new Matrix<int>(2, 3, new int[] { 0, 1, 2, 3, 4, 5 });
+            var matrix = new BaseMatrix<int>(2, 3, new int[] { 0, 1, 2, 3, 4, 5 });
 
             // make sure the matrix mapped the values correctly
             Assert.True(matrix[0, 0] == 0);
