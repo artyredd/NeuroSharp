@@ -62,7 +62,7 @@ namespace NeuroSharp
         /// </summary>
         /// <param name="Rows"></param>
         /// <param name="Columns"></param>
-        public static T[][] Create<T>(int Rows, int Columns, IEnumerable<T> Enumerable)
+        public static T[][] Create<T>(int Rows, int Columns, IEnumerable<T> Enumerable, int? MaxEnumeration)
         {
             if (Enumerable?.GetEnumerator() is null)
             {
@@ -71,6 +71,8 @@ namespace NeuroSharp
             }
 
             var matrix = new T[Rows][];
+
+            MaxEnumeration ??= Rows * Columns;
 
             using (var Enumerator = Enumerable.GetEnumerator())
             {
@@ -82,13 +84,16 @@ namespace NeuroSharp
                     // fill with default values since we have no garuntee the enumerable object that is provided can provide enough values to fill the matrix
                     matrix[row].Initialize();
 
+                    // create a contigous block for this row
+                    Span<T> RowSpan = new(matrix[row]);
+
                     // try to enumerate and set the column values
                     for (int column = 0; column < Columns; column++)
                     {
                         // if we get a value back from the enumerator then set it.
-                        if (Enumerator.MoveNext())
+                        if (row + column < MaxEnumeration && Enumerator.MoveNext())
                         {
-                            matrix[row][column] = Enumerator.Current;
+                            RowSpan[column] = Enumerator.Current;
                         }
                     }
                 }
@@ -119,10 +124,12 @@ namespace NeuroSharp
             {
                 matrix[row] = new T[Columns];
 
+                Span<T> RowSpan = new(matrix[row]);
+
                 // create the default values
                 for (int column = 0; column < Columns; column++)
                 {
-                    matrix[row][column] = T_Provider.Invoke();
+                    RowSpan[column] = T_Provider.Invoke();
                 }
             }
             return matrix;
@@ -150,10 +157,12 @@ namespace NeuroSharp
             {
                 matrix[row] = new T[Columns];
 
+                Span<T> RowSpan = new(matrix[row]);
+
                 // create the default values
                 for (int column = 0; column < Columns; column++)
                 {
-                    matrix[row][column] = T_ProviderUsingRow.Invoke(row);
+                    RowSpan[column] = T_ProviderUsingRow.Invoke(row);
                 }
             }
             return matrix;
@@ -181,10 +190,12 @@ namespace NeuroSharp
             {
                 matrix[row] = new T[Columns];
 
+                Span<T> RowSpan = new(matrix[row]);
+
                 // create the default values
                 for (int column = 0; column < Columns; column++)
                 {
-                    matrix[row][column] = T_ProviderUsingIndexes.Invoke(row, column);
+                    RowSpan[column] = T_ProviderUsingIndexes.Invoke(row, column);
                 }
             }
             return matrix;
@@ -214,6 +225,54 @@ namespace NeuroSharp
                 matrix[row] = new T[Columns];
 
                 Array.Fill(matrix[row], DefaultValue);
+            }
+
+            return matrix;
+        }
+
+        /// <summary>
+        /// Instantiates a new Matrix array with the given <paramref name="Rows"/> and <paramref name="Columns"/>. The elements of the matrix are populated with a single dimension span <paramref name="Values"/>. 
+        /// <code>
+        /// The length of <paramref name="Values"/> MUST be <paramref name="Rows"/> * <paramref name="Columns"/>
+        /// </code>
+        /// <para>
+        /// Example Usage:
+        /// <code>
+        /// var matrix = new Matrix&lt;int&gt;( Rows: 2, Columns: 3, DefaultValue: 12);
+        /// </code>
+        /// Output:
+        /// <code>
+        /// Matrix: Row[0] = { 12, 12, 12 }, Row[1] = { 12, 12, 12 }
+        /// </code>
+        /// </para>
+        /// </summary>
+        /// <param name="Rows"></param>
+        /// <param name="Columns"></param>
+        /// <exception cref="ArgumentException"></exception>
+        public static T[][] Create<T>(int Rows, int Columns, Span<T> Values)
+        {
+            // make sure that we can actually create a matrix from this span
+            if (Rows * Columns != Values.Length)
+            {
+                throw Exceptions.InconsistentSpanLengthForNewMatrix(Values.Length, Rows, Columns);
+            }
+
+            // create a new matrix
+            T[][] matrix = new T[Rows][];
+
+            for (int row = 0; row < Rows; row++)
+            {
+                // create a array backing for the span
+                T[] newRow = new T[Columns];
+
+                // make sure to assign this row to the matrix
+                matrix[row] = newRow;
+
+                // create a contiguous block of memory
+                Span<T> RowSpan = new(newRow);
+
+                // copy the sliced row to the result array
+                Values.Slice(row * Columns, Columns).CopyTo(RowSpan);
             }
 
             return matrix;

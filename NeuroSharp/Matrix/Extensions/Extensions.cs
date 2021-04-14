@@ -106,5 +106,40 @@ namespace NeuroSharp
 
             return targetMatrix;
         }
+
+        public static BaseMatrix<T> TransposeWithMutableSpan<T>(this BaseMatrix<T> sourceMatrix) where T : unmanaged, IComparable<T>, IEquatable<T>
+        {
+            // ceate a new matrix with opposite shape
+            BaseMatrix<T> targetMatrix = new(sourceMatrix.Columns, sourceMatrix.Rows);
+
+            /*
+                Expected Behaviour
+                | 1 2 3 |
+                | 4 5 6 |
+
+                | 1 4 |
+                | 2 5 |
+                | 3 6 |
+                
+                | [0, 0] [0, 1] [0, 2] |
+                | [1, 0] [1, 1] [1, 2] |
+                
+                | [0, 0] [1, 0] |
+                | [0, 1] [1, 1] |
+                | [0, 2] [1, 2] |
+            */
+
+            for (int SourceRow = 0; SourceRow < sourceMatrix.Rows; SourceRow++)
+            {
+                Span<T> Row = new(sourceMatrix[SourceRow]);
+
+                for (int SourceColumn = 0; SourceColumn < sourceMatrix.Columns; SourceColumn++)
+                {
+                    targetMatrix[SourceColumn, SourceRow] = Row[SourceColumn];
+                }
+            }
+
+            return targetMatrix;
+        }
     }
 }

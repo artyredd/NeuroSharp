@@ -26,7 +26,7 @@ namespace NeuroSharp
 
         public virtual ref T[] this[int _RowIndex] => ref _Matrix[_RowIndex];
 
-        public TransposedMatrix<T> Transposed { get; init; }
+        public virtual TransposedMatrix<T> Transposed { get; init; }
 
         /// <summary>
         /// Gets the total capacity of this matrix. Calculated by multiplying the number of rows by the number of columns.
@@ -36,13 +36,6 @@ namespace NeuroSharp
         public virtual int Rows => Count;
 
         public virtual int Columns => _Matrix is null ? 0 : this[0].Length;
-
-        /// <summary>
-        /// Represents a Lambda Expression, Lambda Function, Method or otherwise delegate of any type that accepts a reference value <typeparamref name="T"/> and performs some action on it, the delegate need not return the value;
-        /// </summary>
-        /// <param name="Member"></param>
-        /// <returns></returns>
-        public delegate T MemberWiseOperation(ref T Member);
 
         // BEGIN CONSRUCTORS
 
@@ -86,9 +79,16 @@ namespace NeuroSharp
         }
 
 
-        public BaseMatrix(int Rows, int Columns, IEnumerable<T> Enumerable)
+        public BaseMatrix(int Rows, int Columns, IEnumerable<T> Enumerable, int? MaxEnumeration = null)
         {
-            var tmp = ArrayFactory.Create(Rows, Columns, Enumerable);
+            var tmp = ArrayFactory.Create(Rows, Columns, Enumerable, MaxEnumeration);
+            _Matrix = tmp;
+            Transposed = new(ref tmp);
+        }
+
+        public BaseMatrix(int Rows, int Columns, Span<T> Values, bool AsEnumerable)
+        {
+            var tmp = AsEnumerable ? ArrayFactory.Create(Rows, Columns, Values) : ArrayFactory.Create(Rows, Columns, Values);
             _Matrix = tmp;
             Transposed = new(ref tmp);
         }
@@ -101,7 +101,7 @@ namespace NeuroSharp
         /// Complexity: O(n)
         /// </code>
         /// <para>
-        /// Elements are mutated in-place using ref;
+        /// Elements are mutated in-place using <c>ref</c>
         /// </para>
         /// Example Usage:
         /// <code>
@@ -123,16 +123,7 @@ namespace NeuroSharp
         /// </summary>
         /// <param name="Operation"></param>
         /// <returns></returns>
-        public void PerformMemberWise(MemberWiseOperation Operation)
-        {
-            for (int row = 0; row < Rows; row++)
-            {
-                for (int column = 0; column < Columns; column++)
-                {
-                    Operation(ref _Matrix[row][column]);
-                }
-            }
-        }
+        public void PerformMemberWise(MatrixOperations.SingleElementOperation<T> Operation) => MatrixOperations.PerformOperationMemberwise(this, Operation);
 
         // BEGIN ARRAY EXTENSION PROPERTIES AND METHODS
 
@@ -170,7 +161,7 @@ namespace NeuroSharp
         /// <summary>
         /// Creates a clone of this object.
         /// <code>
-        /// Avoids boxing the object on the heap.
+        /// Avoids boxing the object
         /// </code>
         /// <code>Complexity: O(n)</code>
         /// </summary>
