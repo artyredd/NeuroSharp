@@ -1,0 +1,202 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace NeuroSharp.Float
+{
+    public class Matrix : BaseMatrix<float>, IMatrix<float>
+    {
+        /// <summary>
+        /// Creates a new float32 Matrix.
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// <para>
+        /// Example:
+        /// <c>var matrix = new Matrix(2,2)</c>
+        /// </para>
+        /// Outputs:
+        /// <code>
+        ///  0 0
+        /// </code>
+        /// <code>
+        ///  0 0
+        /// </code>
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="Rows">Height of the matrix</param>
+        /// <param name="Columns">Width of the matrix</param>
+        /// <returns>
+        /// <see cref="Matrix"/>
+        /// </returns>
+        public Matrix(int Rows, int Columns) : base(Rows, Columns) => AssignOperations();
+
+        /// <summary>
+        /// Instantiates a new Matrix array with the given <paramref name="Rows"/> and <paramref name="Columns"/>. For each new item in all rows <paramref name="T_Provider"/> is invoked to set the value of the float32 in the spot.
+        /// <para>
+        /// Example Usage:
+        /// <code>
+        /// var matrix = new Matrix( Rows: 2, Columns: 3, DelegateThatReturnsT: ()=&gt; 1);
+        /// </code>
+        /// Output:
+        /// <code>
+        /// Matrix: Row[0] = { 1, 1, 1 }, Row[1] = { 1, 1, 1 }
+        /// </code>
+        /// </para>
+        /// </summary>
+        /// <param name="Rows"></param>
+        /// <param name="Columns"></param>
+        /// <returns>
+        /// <see cref="Matrix"/>
+        /// </returns>
+        public Matrix(int Rows, int Columns, Func<float> T_Delegate) : base(Rows, Columns, T_Delegate) => AssignOperations();
+
+        /// <summary>
+        /// Instantiates a new Matrix array with the given <paramref name="Rows"/> and <paramref name="Columns"/>. For each new item in all rows <paramref name="T_ProviderUsingRow"/> is invoked to set the value of the in32 in the spot, this <paramref name="T_ProviderUsingRow"/> is invoked with a <see cref="float"/> Row Index where that element is contained.
+        /// <para>
+        /// Example Usage(where i = Row Index where the element is located):
+        /// <code>
+        /// var matrix = new float.Matrix( Rows: 2, Columns: 3, DelegateThatReturnsTUsingRowNumber: (i)=&gt; i);
+        /// </code>
+        /// Output:
+        /// <code>
+        /// Matrix: Row[0] = { 0, 0, 0 }, Row[1] = { 1, 1, 1 }
+        /// </code>
+        /// </para>
+        /// </summary>
+        /// <param name="Rows"></param>
+        /// <param name="Columns"></param>
+        /// <returns>
+        /// <see cref="Matrix"/>
+        /// </returns>
+        public Matrix(int Rows, int Columns, Func<int, float> T_DelegateUsingRowIndex) : base(Rows, Columns, T_DelegateUsingRowIndex) => AssignOperations();
+
+        /// <summary>
+        /// Instantiates a new Matrix array with the given <paramref name="Rows"/> and <paramref name="Columns"/>. For each new item in all rows <paramref name="T_ProviderUsingIndexes"/> is invoked to set the value of the float32 in the spot, this <paramref name="T_ProviderUsingIndexes"/> is invoked with a <see cref="float"/> Row Index where that element is contained.
+        /// <para>
+        /// Example Usage(where x = Row Index where the element is located, and y = Column Index where the element is located):
+        /// <code>
+        /// var matrix = new float.Matrix( Rows: 2, Columns: 3, DelegateThatReturnsTUsingRowNumberAndColumnNumber: (x,y)=&gt; x + y);
+        /// </code>
+        /// Output:
+        /// <code>
+        /// Matrix: Row[0] = { 0, 1, 2 }, Row[1] = { 1, 2, 3 }
+        /// </code>
+        /// </para>
+        /// </summary>
+        /// <param name="Rows"></param>
+        /// <param name="Columns"></param>
+        /// <returns>
+        /// <see cref="Matrix"/>
+        /// </returns>
+        public Matrix(int Rows, int Columns, Func<int, int, float> T_DelegateUsingIndices) : base(Rows, Columns, T_DelegateUsingIndices) => AssignOperations();
+
+        /// <summary>
+        /// Instantiates a new Matrix array with the given <paramref name="Rows"/> and <paramref name="Columns"/>. Each new item in the array is set to the provided <paramref name="DefaultValue"/>
+        /// <para>
+        /// Example Usage:
+        /// <code>
+        /// var matrix = new float.Matrix( Rows: 2, Columns: 3, DefaultValue: 12);
+        /// </code>
+        /// Output:
+        /// <code>
+        /// Matrix: Row[0] = { 12, 12, 12 }, Row[1] = { 12, 12, 12 }
+        /// </code>
+        /// </para>
+        /// </summary>
+        /// <param name="Rows"></param>
+        /// <param name="Columns"></param>
+        /// <returns>
+        /// <see cref="Matrix"/>
+        /// </returns>
+        public Matrix(int Rows, int Columns, float DefaultValue) : base(Rows, Columns, DefaultValue) => AssignOperations();
+
+        /// <summary>
+        /// Instantiates a new Matrix array with the given <paramref name="Rows"/> and <paramref name="Columns"/>. Each new item in the array is set using the value returned from an iteration from <paramref name="Enumerable"/>. If the enumerable object fails to produce enough items to fill the entire matrix, all remaining values will be set to their default values. If <paramref name="MaxEnumeration"/> is not set then the enumerator will be attempted to be called for every item. If <paramref name="MaxEnumeration"/> IS set, the enumerable will only be used for <paramref name="MaxEnumeration"/> n elements before no longer being used to fill values in the matrix.
+        /// <para>
+        /// Example Usage:
+        /// <code>
+        /// var matrix = new Matrix&lt;float&gt;( Rows: 2, Columns: 3, Enumerable: new float[]{ 0, 1, 2, 3 });
+        /// </code>
+        /// Output:
+        /// <code>
+        /// Matrix: Row[0] = { 0, 1, 2 }, Row[1] = { 3, 0, 0 }
+        /// </code>
+        /// </para>
+        /// </summary>
+        /// <param name="Rows"></param>
+        /// <param name="Columns"></param>
+        /// <returns>
+        /// <see cref="Matrix"/>
+        /// </returns>
+        public Matrix(int Rows, int Columns, IEnumerable<float> Enumerable, int? MaxEnumeration = null) : base(Rows, Columns, Enumerable, MaxEnumeration) => AssignOperations();
+
+        /// <summary>
+        /// Instantiates a new Matrix array with the given <paramref name="Rows"/> and <paramref name="Columns"/>. Items are filled floato the matrix by slicing the provided <see cref="Span{T}"/>. If <paramref name="AsEnumerable"/> is set to true the <see cref="Span{T}"/> is used an an <see cref="IEnumerable{T}"/> object instead of single-dimensional contigous memory block. If the <see cref="Span{T}"/> is being used as an <see cref="IEnumerable{T}"/> fails to produce enough items to fill the entire matrix, all remaining values will be set to their <see langword="default"/> values.
+        /// <para>
+        /// Example Usage:
+        /// <code>
+        /// var matrix = new Matrix&lt;float&gt;( Rows: 2, Columns: 3, Values: new Span(new float[]{ 0, 1, 2, 3 }));
+        /// </code>
+        /// Output:
+        /// <code>
+        /// Matrix: Row[0] = { 0, 1, 2 }, Row[1] = { 3, 0, 0 }
+        /// </code>
+        /// </para>
+        /// </summary>
+        /// <param name="Rows"></param>
+        /// <param name="Columns"></param>
+        /// <returns>
+        /// <see cref="Matrix"/>
+        /// </returns>
+        public Matrix(int Rows, int Columns, Span<float> Values, bool AsEnumerable) : base(Rows, Columns, Values, AsEnumerable) => AssignOperations();
+
+        public override OperationSet<float, float> FloatOperations => SameTypedOperations;
+
+        private void AssignOperations()
+        {
+            SameTypedOperations = new()
+            {
+                ReferenceAdder = (float Value) => (ref float element) => element += Value,
+                ReferenceMultiplier = (float Scalar) => (ref float element) => element *= Scalar,
+                TwoValueAdder = (ref float Left, ref float Right) => Left + Right,
+                TwoValueMultiplier = (ref float Left, ref float Right) => Left * Right,
+                TwoRefenceAdder = (ref float Left, ref float Right) => Left += Right,
+                TwoRefenceSubtractor = (ref float Left, ref float Right) => Left -= Right,
+                TwoReferenceMultiplier = (ref float Left, ref float Right) => Left *= Right,
+            };
+            IntegerOperations = new()
+            {
+                ReferenceAdder = (int Value) => (ref float element) => element += Value,
+                ReferenceMultiplier = (int Scalar) => (ref float element) => element *= Scalar,
+                TwoValueAdder = (ref float Left, ref float Right) => Left + Right,
+                TwoValueMultiplier = (ref float Left, ref float Right) => Left * Right,
+                TwoRefenceAdder = (ref float Left, ref float Right) => Left += Right,
+                TwoRefenceSubtractor = (ref float Left, ref float Right) => Left -= Right,
+                TwoReferenceMultiplier = (ref float Left, ref float Right) => Left *= Right,
+            };
+            DoubleOperations = new()
+            {
+                ReferenceAdder = (double Value) => (ref float element) => element += (float)Value,
+                ReferenceMultiplier = (double Scalar) => (ref float element) => element *= (float)Scalar,
+                TwoValueAdder = (ref float Left, ref float Right) => Left + Right,
+                TwoValueMultiplier = (ref float Left, ref float Right) => Left * Right,
+                TwoRefenceAdder = (ref float Left, ref float Right) => Left += Right,
+                TwoRefenceSubtractor = (ref float Left, ref float Right) => Left -= Right,
+                TwoReferenceMultiplier = (ref float Left, ref float Right) => Left *= Right,
+            };
+            DecimalOperations = new()
+            {
+                ReferenceAdder = (decimal Value) => (ref float element) => element += (float)Value,
+                ReferenceMultiplier = (decimal Scalar) => (ref float element) => element *= (float)Scalar,
+                TwoValueAdder = (ref float Left, ref float Right) => Left + Right,
+                TwoValueMultiplier = (ref float Left, ref float Right) => Left * Right,
+                TwoRefenceAdder = (ref float Left, ref float Right) => Left += Right,
+                TwoRefenceSubtractor = (ref float Left, ref float Right) => Left -= Right,
+                TwoReferenceMultiplier = (ref float Left, ref float Right) => Left *= Right,
+            };
+        }
+    }
+}

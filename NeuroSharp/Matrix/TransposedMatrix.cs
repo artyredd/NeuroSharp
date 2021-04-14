@@ -31,7 +31,7 @@ namespace NeuroSharp
         /// <returns>
         /// <see cref="BaseMatrix{T}"/>
         /// </returns>
-        public override BaseMatrix<T> Duplicate()
+        public override IMatrix<T> Duplicate()
         {
             var matrix = base.Duplicate().Transpose();
 

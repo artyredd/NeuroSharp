@@ -15,7 +15,8 @@ namespace NeuroSharp
         IEnumerable<T[]>,
         IStructuralComparable,
         IStructuralEquatable,
-        ICloneable
+        ICloneable,
+        IMatrix<T>
         where T : unmanaged, IComparable<T>, IEquatable<T>
 
     {
@@ -36,6 +37,12 @@ namespace NeuroSharp
         public virtual int Rows => Count;
 
         public virtual int Columns => _Matrix is null ? 0 : this[0].Length;
+
+        public virtual OperationSet<T, int> IntegerOperations { get; set; }
+        public virtual OperationSet<T, double> DoubleOperations { get; set; }
+        public virtual OperationSet<T, float> FloatOperations { get; set; }
+        public virtual OperationSet<T, decimal> DecimalOperations { get; set; }
+        public virtual OperationSet<T, T> SameTypedOperations { get; set; }
 
         // BEGIN CONSRUCTORS
 
@@ -168,7 +175,7 @@ namespace NeuroSharp
         /// <returns>
         /// <see cref="BaseMatrix{T}"/>
         /// </returns>
-        public virtual BaseMatrix<T> Duplicate()
+        public virtual IMatrix<T> Duplicate()
         {
             T[][] ClonedMatrix = new T[Rows][];
 

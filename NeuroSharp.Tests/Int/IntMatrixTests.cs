@@ -13,7 +13,9 @@ namespace NeuroSharp.Tests
         [Fact]
         public void Multiply_Scalar_OperatorWorks()
         {
-            var matrix = new Matrix(2, 2, new int[] { 0, 1, 2, 3 });
+            IMatrix<int> matrix = new Matrix(2, 2, new int[] { 0, 1, 2, 3 });
+
+            matrix.IntegerOperations.ReferenceMultiplier = (int scalar) => ((ref int matrixElement) => matrixElement *= scalar);
 
             matrix *= 2;
 
@@ -26,9 +28,9 @@ namespace NeuroSharp.Tests
         [Fact]
         public void Add_Matrix_OperatorWorks()
         {
-            var matrix = new Matrix(2, 2, new int[] { 0, 1, 2, 3 });
+            IMatrix<int> matrix = new Matrix(2, 2, new int[] { 0, 1, 2, 3 });
 
-            var right = new Matrix(2, 2, new int[] { 3, 2, 1, 0 });
+            IMatrix<int> right = new Matrix(2, 2, new int[] { 3, 2, 1, 0 });
 
             matrix += right;
 
@@ -41,9 +43,9 @@ namespace NeuroSharp.Tests
         [Fact]
         public void Subtract_Matrix_OperatorWorks()
         {
-            var left = new Matrix(2, 2, new int[] { 0, 1, 2, 3 });
+            IMatrix<int> left = new Matrix(2, 2, new int[] { 0, 1, 2, 3 });
 
-            var right = new Matrix(2, 2, new int[] { 3, 2, 1, 0 });
+            IMatrix<int> right = new Matrix(2, 2, new int[] { 3, 2, 1, 0 });
 
             left -= right;
 
@@ -63,7 +65,7 @@ namespace NeuroSharp.Tests
         [Fact]
         public void Add_Constant_OperatorWorks()
         {
-            var matrix = new Matrix(2, 2, new int[] { 0, 1, 2, 3 });
+            IMatrix<int> matrix = new Matrix(2, 2, new int[] { 0, 1, 2, 3 });
 
             matrix += 2;
 
@@ -76,7 +78,7 @@ namespace NeuroSharp.Tests
         [Fact]
         public void Subtract_Constant_OperatorWorks()
         {
-            var matrix = new Matrix(2, 2, new int[] { 0, 1, 2, 3 });
+            IMatrix<int> matrix = new Matrix(2, 2, new int[] { 0, 1, 2, 3 });
 
             matrix -= 2;
 
@@ -86,42 +88,14 @@ namespace NeuroSharp.Tests
             Assert.Equal(1, matrix[1, 1]);
         }
 
-        [Fact]
-        public void InvalidOperationsThrows()
-        {
-            var matrix = new Matrix(2, 2);
-            void ShouldThrow(Action op)
-            {
-                op();
-            }
-
-            Assert.Throws<InvalidOperationException>(() => ShouldThrow(() => { matrix *= 2.0f; }));
-            Assert.Throws<InvalidOperationException>(() => ShouldThrow(() => { matrix *= 2.0m; }));
-            Assert.Throws<InvalidOperationException>(() => ShouldThrow(() => { matrix *= 2.0d; }));
-            Assert.Throws<InvalidOperationException>(() => ShouldThrow(() => { matrix += 2.0f; }));
-            Assert.Throws<InvalidOperationException>(() => ShouldThrow(() => { matrix += 2.0m; }));
-            Assert.Throws<InvalidOperationException>(() => ShouldThrow(() => { matrix += 2.0d; }));
-            Assert.Throws<InvalidOperationException>(() => ShouldThrow(() => { matrix -= 2.0f; }));
-            Assert.Throws<InvalidOperationException>(() => ShouldThrow(() => { matrix -= 2.0m; }));
-            Assert.Throws<InvalidOperationException>(() => ShouldThrow(() => { matrix -= 2.0d; }));
-            Assert.Throws<InvalidOperationException>(() => ShouldThrow(() => { matrix = 2.0f * matrix; }));
-            Assert.Throws<InvalidOperationException>(() => ShouldThrow(() => { matrix = 2.0d * matrix; }));
-            Assert.Throws<InvalidOperationException>(() => ShouldThrow(() => { matrix = 2.0m * matrix; }));
-            Assert.Throws<InvalidOperationException>(() => ShouldThrow(() => { matrix = 2.0f - matrix; }));
-            Assert.Throws<InvalidOperationException>(() => ShouldThrow(() => { matrix = 2.0d - matrix; }));
-            Assert.Throws<InvalidOperationException>(() => ShouldThrow(() => { matrix = 2.0m - matrix; }));
-            Assert.Throws<InvalidOperationException>(() => ShouldThrow(() => { matrix = 2.0f + matrix; }));
-            Assert.Throws<InvalidOperationException>(() => ShouldThrow(() => { matrix = 2.0d + matrix; }));
-            Assert.Throws<InvalidOperationException>(() => ShouldThrow(() => { matrix = 2.0m + matrix; }));
-        }
 
         [Fact]
         public void Multiply_MultipleMatricesWorks()
         {
-            var left = new Matrix(2, 4, new int[] { 0, 1, 2, 3, 4, 5, 6, 7 });
-            var right = new Matrix(4, 2, new int[] { 0, 1, 2, 3, 4, 5, 6, 7 });
+            IMatrix<int> left = new Matrix(2, 4, new int[] { 0, 1, 2, 3, 4, 5, 6, 7 });
+            IMatrix<int> right = new Matrix(4, 2, new int[] { 0, 1, 2, 3, 4, 5, 6, 7 });
 
-            var result = left * right;
+            IMatrix<int> result = left * right;
 
             Assert.Equal(28, result[0, 0]);
             Assert.Equal(34, result[0, 1]);
@@ -147,13 +121,14 @@ namespace NeuroSharp.Tests
             }
         }
 
+        [Fact]
         public void Multiply_InvalidMatriciesThrowsError()
         {
             // the multiply function should throw if the matrices don't qualify to be multiplied
 
             // only square and left matrice left rows = right cols
-            var left = new Matrix(2, 3, 12);
-            var right = new Matrix(3, 3, 1);
+            IMatrix<int> left = new Matrix(2, 3, 12);
+            IMatrix<int> right = new Matrix(1, 3, 1);
 
             Assert.Throws<InvalidOperationException>(() => { left = left * right; });
         }

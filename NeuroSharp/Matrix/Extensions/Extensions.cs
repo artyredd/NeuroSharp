@@ -34,7 +34,7 @@ namespace NeuroSharp
         /// <c>int[]{ 1 2 3 4 }</c>
         /// </summary>
         /// <returns></returns>
-        public static T[] ToOneDimension<T>(this BaseMatrix<T> matrix) where T : unmanaged, IComparable<T>, IEquatable<T>
+        public static T[] ToOneDimension<T>(this IMatrix<T> matrix) where T : unmanaged, IComparable<T>, IEquatable<T>
         {
             T[] megaArray = new T[matrix.Capacity];
 
@@ -74,7 +74,7 @@ namespace NeuroSharp
         /// <returns>
         /// <see cref="BaseMatrix{T}"/>
         /// </returns>
-        public static BaseMatrix<T> Transpose<T>(this BaseMatrix<T> sourceMatrix) where T : unmanaged, IComparable<T>, IEquatable<T>
+        public static IMatrix<T> Transpose<T>(this IMatrix<T> sourceMatrix) where T : unmanaged, IComparable<T>, IEquatable<T>
         {
             // ceate a new matrix with opposite shape
             BaseMatrix<T> targetMatrix = new(sourceMatrix.Columns, sourceMatrix.Rows);
@@ -107,7 +107,7 @@ namespace NeuroSharp
             return targetMatrix;
         }
 
-        public static BaseMatrix<T> TransposeWithMutableSpan<T>(this BaseMatrix<T> sourceMatrix) where T : unmanaged, IComparable<T>, IEquatable<T>
+        public static IMatrix<T> TransposeWithMutableSpan<T>(this IMatrix<T> sourceMatrix) where T : unmanaged, IComparable<T>, IEquatable<T>
         {
             // ceate a new matrix with opposite shape
             BaseMatrix<T> targetMatrix = new(sourceMatrix.Columns, sourceMatrix.Rows);

@@ -11,7 +11,7 @@ namespace NeuroSharp
         public delegate T TwoElementOperation<T>(ref T left, ref T right);
         public delegate T SingleElementOperation<T>(ref T MatrixElement);
 
-        public static BaseMatrix<T> PerformOperationMemberwise<T>(BaseMatrix<T> matrix, SingleElementOperation<T> Operation) where T : unmanaged, IComparable<T>, IEquatable<T>
+        public static IMatrix<T> PerformOperationMemberwise<T>(IMatrix<T> matrix, SingleElementOperation<T> Operation) where T : unmanaged, IComparable<T>, IEquatable<T>
         {
             for (int row = 0; row < matrix.Rows; row++)
             {
@@ -25,7 +25,7 @@ namespace NeuroSharp
             return matrix;
         }
 
-        public static BaseMatrix<T> PerformTwoSidedOperationMemberwise<T>(BaseMatrix<T> Left, BaseMatrix<T> Right, TwoElementOperation<T> Operation)
+        public static IMatrix<T> PerformTwoSidedOperationMemberwise<T>(IMatrix<T> Left, IMatrix<T> Right, TwoElementOperation<T> Operation)
             where T : unmanaged, IComparable<T>, IEquatable<T>
         {
             // this function should only be used when the two matrices are the same shape(same row and column count)
@@ -40,7 +40,7 @@ namespace NeuroSharp
             }
             return Left;
         }
-        public static Span<T> MultiplyMatrices<T>(BaseMatrix<T> Left, BaseMatrix<T> Right, TwoElementOperation<T> Multiplier, TwoElementOperation<T> Adder)
+        public static Span<T> MultiplyMatrices<T>(IMatrix<T> Left, IMatrix<T> Right, TwoElementOperation<T> Multiplier, TwoElementOperation<T> Adder)
             where T : unmanaged, IComparable<T>, IEquatable<T>
         {
             // to multiply two matrices we calc the dot product of the first row of the left with the first column of the right
