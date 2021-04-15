@@ -32,14 +32,14 @@ namespace NeuroSharp
         /// </summary>
         int Count { get; }
 
-        OperationSet<T, decimal> DecimalOperations { get; set; }
-
-        OperationSet<T, double> DoubleOperations { get; set; }
-
-        OperationSet<T, float> FloatOperations { get; set; }
-
         OperationSet<T, int> IntegerOperations { get; set; }
-
+        OperationSet<T, double> DoubleOperations { get; set; }
+        OperationSet<T, float> FloatOperations { get; set; }
+        OperationSet<T, decimal> DecimalOperations { get; set; }
+        OperationSet<T, long> LongOperations { get; set; }
+        OperationSet<T, short> ShortOperations { get; set; }
+        OperationSet<T, byte> ByteOperations { get; set; }
+        OperationSet<T, sbyte> SByteOperations { get; set; }
         OperationSet<T, T> SameTypedOperations { get; set; }
 
         /// <summary>
@@ -126,6 +126,241 @@ namespace NeuroSharp
         /// </summary>
         bool Remove(T[] item);
 
+        // sbyte operators
+        /// <summary>
+        /// Performs a memberwise-scalar operation on the entire matrix
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// </summary>
+        /// <param name="Scalar"></param>
+        /// <param name="Matrix"></param>
+        /// <returns>
+        /// Reference to the original modified matrix <see cref="Matrix"/>
+        /// </returns>
+        public static IMatrix<T> operator *(IMatrix<T> matrix, sbyte Scalar)
+        {
+            matrix.PerformMemberWise(matrix.SByteOperations.ReferenceMultiplier(Scalar));
+            return matrix;
+        }
+
+        /// <summary>
+        /// Performs a memberwise addition operation on the entire matrix member-wise
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// </summary>
+        /// <param name="Value"></param>
+        /// <param name="Matrix"></param>
+        /// <returns>
+        /// Reference to the original modified matrix <see cref="Matrix"/>
+        /// </returns>
+        public static IMatrix<T> operator +(sbyte Value, IMatrix<T> matrix)
+        {
+            matrix.PerformMemberWise(matrix.SByteOperations.ReferenceAdder(Value));
+            return matrix;
+        }
+
+        /// <summary>
+        /// Performs a memberwise addition operation on the entire matrix member-wise
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// </summary>
+        /// <param name="Value"></param>
+        /// <param name="Matrix"></param>
+        /// <returns>
+        /// Reference to the original modified matrix <see cref="Matrix"/>
+        /// </returns>
+        public static IMatrix<T> operator +(IMatrix<T> Matrix, sbyte Value) => Value + Matrix;
+
+        /// <summary>
+        /// Performs a memberwise subtraction operation on the entire matrix member-wise
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// </summary>
+        /// <param name="Value"></param>
+        /// <param name="Matrix"></param>
+        /// <returns>
+        /// Reference to the original modified matrix <see cref="Matrix"/>
+        /// </returns>
+        public static IMatrix<T> operator -(sbyte Value, IMatrix<T> Matrix)
+        {
+            Matrix.PerformMemberWise(Matrix.SByteOperations.ReferenceAdder((sbyte)-Value));
+            return Matrix;
+        }
+
+        /// <summary>
+        /// Performs a memberwise subtraction operation on the entire matrix member-wise
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// </summary>
+        /// <param name="Value"></param>
+        /// <param name="Matrix"></param>
+        /// <returns>
+        /// Reference to the original modified matrix <see cref="Matrix"/>
+        /// </returns>
+        public static IMatrix<T> operator -(IMatrix<T> Matrix, sbyte Value) => Value - Matrix;
+
+        // byte operators
+        /// <summary>
+        /// Performs a memberwise-scalar operation on the entire matrix
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// </summary>
+        /// <param name="Scalar"></param>
+        /// <param name="Matrix"></param>
+        /// <returns>
+        /// Reference to the original modified matrix <see cref="Matrix"/>
+        /// </returns>
+        public static IMatrix<T> operator *(IMatrix<T> matrix, byte Scalar)
+        {
+            matrix.PerformMemberWise(matrix.ByteOperations.ReferenceMultiplier(Scalar));
+            return matrix;
+        }
+
+        /// <summary>
+        /// Performs a memberwise addition operation on the entire matrix member-wise
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// </summary>
+        /// <param name="Value"></param>
+        /// <param name="Matrix"></param>
+        /// <returns>
+        /// Reference to the original modified matrix <see cref="Matrix"/>
+        /// </returns>
+        public static IMatrix<T> operator +(byte Value, IMatrix<T> matrix)
+        {
+            matrix.PerformMemberWise(matrix.ByteOperations.ReferenceAdder(Value));
+            return matrix;
+        }
+
+        /// <summary>
+        /// Performs a memberwise addition operation on the entire matrix member-wise
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// </summary>
+        /// <param name="Value"></param>
+        /// <param name="Matrix"></param>
+        /// <returns>
+        /// Reference to the original modified matrix <see cref="Matrix"/>
+        /// </returns>
+        public static IMatrix<T> operator +(IMatrix<T> Matrix, byte Value) => Value + Matrix;
+
+        /// <summary>
+        /// Performs a memberwise subtraction operation on the entire matrix member-wise
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// </summary>
+        /// <param name="Value"></param>
+        /// <param name="Matrix"></param>
+        /// <returns>
+        /// Reference to the original modified matrix <see cref="Matrix"/>
+        /// </returns>
+        public static IMatrix<T> operator -(byte Value, IMatrix<T> Matrix)
+        {
+            Matrix.PerformMemberWise(Matrix.ByteOperations.ReferenceAdder((byte)-Value));
+            return Matrix;
+        }
+
+        /// <summary>
+        /// Performs a memberwise subtraction operation on the entire matrix member-wise
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// </summary>
+        /// <param name="Value"></param>
+        /// <param name="Matrix"></param>
+        /// <returns>
+        /// Reference to the original modified matrix <see cref="Matrix"/>
+        /// </returns>
+        public static IMatrix<T> operator -(IMatrix<T> Matrix, byte Value) => Value - Matrix;
+
+        // short operators
+        /// <summary>
+        /// Performs a memberwise-scalar operation on the entire matrix
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// </summary>
+        /// <param name="Scalar"></param>
+        /// <param name="Matrix"></param>
+        /// <returns>
+        /// Reference to the original modified matrix <see cref="Matrix"/>
+        /// </returns>
+        public static IMatrix<T> operator *(IMatrix<T> matrix, short Scalar)
+        {
+            matrix.PerformMemberWise(matrix.ShortOperations.ReferenceMultiplier(Scalar));
+            return matrix;
+        }
+
+        /// <summary>
+        /// Performs a memberwise addition operation on the entire matrix member-wise
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// </summary>
+        /// <param name="Value"></param>
+        /// <param name="Matrix"></param>
+        /// <returns>
+        /// Reference to the original modified matrix <see cref="Matrix"/>
+        /// </returns>
+        public static IMatrix<T> operator +(short Value, IMatrix<T> matrix)
+        {
+            matrix.PerformMemberWise(matrix.ShortOperations.ReferenceAdder(Value));
+            return matrix;
+        }
+
+        /// <summary>
+        /// Performs a memberwise addition operation on the entire matrix member-wise
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// </summary>
+        /// <param name="Value"></param>
+        /// <param name="Matrix"></param>
+        /// <returns>
+        /// Reference to the original modified matrix <see cref="Matrix"/>
+        /// </returns>
+        public static IMatrix<T> operator +(IMatrix<T> Matrix, short Value) => Value + Matrix;
+
+        /// <summary>
+        /// Performs a memberwise subtraction operation on the entire matrix member-wise
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// </summary>
+        /// <param name="Value"></param>
+        /// <param name="Matrix"></param>
+        /// <returns>
+        /// Reference to the original modified matrix <see cref="Matrix"/>
+        /// </returns>
+        public static IMatrix<T> operator -(short Value, IMatrix<T> Matrix)
+        {
+            Matrix.PerformMemberWise(Matrix.ShortOperations.ReferenceAdder((short)-Value));
+            return Matrix;
+        }
+
+        /// <summary>
+        /// Performs a memberwise subtraction operation on the entire matrix member-wise
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// </summary>
+        /// <param name="Value"></param>
+        /// <param name="Matrix"></param>
+        /// <returns>
+        /// Reference to the original modified matrix <see cref="Matrix"/>
+        /// </returns>
+        public static IMatrix<T> operator -(IMatrix<T> Matrix, short Value) => Value - Matrix;
+
+        // int operators
         /// <summary>
         /// Performs a memberwise-scalar operation on the entire matrix
         /// <code>
@@ -203,10 +438,323 @@ namespace NeuroSharp
         /// </returns>
         public static IMatrix<T> operator -(IMatrix<T> Matrix, int Value) => Value - Matrix;
 
+        // long operators
+        /// <summary>
+        /// Performs a memberwise-scalar operation on the entire matrix
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// </summary>
+        /// <param name="Scalar"></param>
+        /// <param name="Matrix"></param>
+        /// <returns>
+        /// Reference to the original modified matrix <see cref="Matrix"/>
+        /// </returns>
+        public static IMatrix<T> operator *(IMatrix<T> matrix, long Scalar)
+        {
+            matrix.PerformMemberWise(matrix.LongOperations.ReferenceMultiplier(Scalar));
+            return matrix;
+        }
+
+        /// <summary>
+        /// Performs a memberwise addition operation on the entire matrix member-wise
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// </summary>
+        /// <param name="Value"></param>
+        /// <param name="Matrix"></param>
+        /// <returns>
+        /// Reference to the original modified matrix <see cref="Matrix"/>
+        /// </returns>
+        public static IMatrix<T> operator +(long Value, IMatrix<T> matrix)
+        {
+            matrix.PerformMemberWise(matrix.LongOperations.ReferenceAdder(Value));
+            return matrix;
+        }
+
+        /// <summary>
+        /// Performs a memberwise addition operation on the entire matrix member-wise
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// </summary>
+        /// <param name="Value"></param>
+        /// <param name="Matrix"></param>
+        /// <returns>
+        /// Reference to the original modified matrix <see cref="Matrix"/>
+        /// </returns>
+        public static IMatrix<T> operator +(IMatrix<T> Matrix, long Value) => Value + Matrix;
+
+        /// <summary>
+        /// Performs a memberwise subtraction operation on the entire matrix member-wise
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// </summary>
+        /// <param name="Value"></param>
+        /// <param name="Matrix"></param>
+        /// <returns>
+        /// Reference to the original modified matrix <see cref="Matrix"/>
+        /// </returns>
+        public static IMatrix<T> operator -(long Value, IMatrix<T> Matrix)
+        {
+            Matrix.PerformMemberWise(Matrix.LongOperations.ReferenceAdder(-Value));
+            return Matrix;
+        }
+
+        /// <summary>
+        /// Performs a memberwise subtraction operation on the entire matrix member-wise
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// </summary>
+        /// <param name="Value"></param>
+        /// <param name="Matrix"></param>
+        /// <returns>
+        /// Reference to the original modified matrix <see cref="Matrix"/>
+        /// </returns>
+        public static IMatrix<T> operator -(IMatrix<T> Matrix, long Value) => Value - Matrix;
+
+        // float
+        /// <summary>
+        /// Performs a memberwise-scalar operation on the entire matrix
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// </summary>
+        /// <param name="Scalar"></param>
+        /// <param name="Matrix"></param>
+        /// <returns>
+        /// Reference to the original modified matrix <see cref="Matrix"/>
+        /// </returns>
+        public static IMatrix<T> operator *(IMatrix<T> matrix, float Scalar)
+        {
+            matrix.PerformMemberWise(matrix.FloatOperations.ReferenceMultiplier(Scalar));
+            return matrix;
+        }
+
+        /// <summary>
+        /// Performs a memberwise addition operation on the entire matrix member-wise
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// </summary>
+        /// <param name="Value"></param>
+        /// <param name="Matrix"></param>
+        /// <returns>
+        /// Reference to the original modified matrix <see cref="Matrix"/>
+        /// </returns>
+        public static IMatrix<T> operator +(float Value, IMatrix<T> matrix)
+        {
+            matrix.PerformMemberWise(matrix.FloatOperations.ReferenceAdder(Value));
+            return matrix;
+        }
+
+        /// <summary>
+        /// Performs a memberwise addition operation on the entire matrix member-wise
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// </summary>
+        /// <param name="Value"></param>
+        /// <param name="Matrix"></param>
+        /// <returns>
+        /// Reference to the original modified matrix <see cref="Matrix"/>
+        /// </returns>
+        public static IMatrix<T> operator +(IMatrix<T> Matrix, float Value) => Value + Matrix;
+
+        /// <summary>
+        /// Performs a memberwise subtraction operation on the entire matrix member-wise
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// </summary>
+        /// <param name="Value"></param>
+        /// <param name="Matrix"></param>
+        /// <returns>
+        /// Reference to the original modified matrix <see cref="Matrix"/>
+        /// </returns>
+        public static IMatrix<T> operator -(float Value, IMatrix<T> Matrix)
+        {
+            Matrix.PerformMemberWise(Matrix.FloatOperations.ReferenceAdder(-Value));
+            return Matrix;
+        }
+
+        /// <summary>
+        /// Performs a memberwise subtraction operation on the entire matrix member-wise
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// </summary>
+        /// <param name="Value"></param>
+        /// <param name="Matrix"></param>
+        /// <returns>
+        /// Reference to the original modified matrix <see cref="Matrix"/>
+        /// </returns>
+        public static IMatrix<T> operator -(IMatrix<T> Matrix, float Value) => Value - Matrix;
+
+        // double
+        /// <summary>
+        /// Performs a memberwise-scalar operation on the entire matrix
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// </summary>
+        /// <param name="Scalar"></param>
+        /// <param name="Matrix"></param>
+        /// <returns>
+        /// Reference to the original modified matrix <see cref="Matrix"/>
+        /// </returns>
+        public static IMatrix<T> operator *(IMatrix<T> matrix, double Scalar)
+        {
+            matrix.PerformMemberWise(matrix.DoubleOperations.ReferenceMultiplier(Scalar));
+            return matrix;
+        }
+
+        /// <summary>
+        /// Performs a memberwise addition operation on the entire matrix member-wise
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// </summary>
+        /// <param name="Value"></param>
+        /// <param name="Matrix"></param>
+        /// <returns>
+        /// Reference to the original modified matrix <see cref="Matrix"/>
+        /// </returns>
+        public static IMatrix<T> operator +(double Value, IMatrix<T> matrix)
+        {
+            matrix.PerformMemberWise(matrix.DoubleOperations.ReferenceAdder(Value));
+            return matrix;
+        }
+
+        /// <summary>
+        /// Performs a memberwise addition operation on the entire matrix member-wise
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// </summary>
+        /// <param name="Value"></param>
+        /// <param name="Matrix"></param>
+        /// <returns>
+        /// Reference to the original modified matrix <see cref="Matrix"/>
+        /// </returns>
+        public static IMatrix<T> operator +(IMatrix<T> Matrix, double Value) => Value + Matrix;
+
+        /// <summary>
+        /// Performs a memberwise subtraction operation on the entire matrix member-wise
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// </summary>
+        /// <param name="Value"></param>
+        /// <param name="Matrix"></param>
+        /// <returns>
+        /// Reference to the original modified matrix <see cref="Matrix"/>
+        /// </returns>
+        public static IMatrix<T> operator -(double Value, IMatrix<T> Matrix)
+        {
+            Matrix.PerformMemberWise(Matrix.DoubleOperations.ReferenceAdder(-Value));
+            return Matrix;
+        }
+
+        /// <summary>
+        /// Performs a memberwise subtraction operation on the entire matrix member-wise
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// </summary>
+        /// <param name="Value"></param>
+        /// <param name="Matrix"></param>
+        /// <returns>
+        /// Reference to the original modified matrix <see cref="Matrix"/>
+        /// </returns>
+        public static IMatrix<T> operator -(IMatrix<T> Matrix, double Value) => Value - Matrix;
+
+        // decimal
+        /// <summary>
+        /// Performs a memberwise-scalar operation on the entire matrix
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// </summary>
+        /// <param name="Scalar"></param>
+        /// <param name="Matrix"></param>
+        /// <returns>
+        /// Reference to the original modified matrix <see cref="Matrix"/>
+        /// </returns>
+        public static IMatrix<T> operator *(IMatrix<T> matrix, decimal Scalar)
+        {
+            matrix.PerformMemberWise(matrix.DecimalOperations.ReferenceMultiplier(Scalar));
+            return matrix;
+        }
+
+        /// <summary>
+        /// Performs a memberwise addition operation on the entire matrix member-wise
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// </summary>
+        /// <param name="Value"></param>
+        /// <param name="Matrix"></param>
+        /// <returns>
+        /// Reference to the original modified matrix <see cref="Matrix"/>
+        /// </returns>
+        public static IMatrix<T> operator +(decimal Value, IMatrix<T> matrix)
+        {
+            matrix.PerformMemberWise(matrix.DecimalOperations.ReferenceAdder(Value));
+            return matrix;
+        }
+
+        /// <summary>
+        /// Performs a memberwise addition operation on the entire matrix member-wise
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// </summary>
+        /// <param name="Value"></param>
+        /// <param name="Matrix"></param>
+        /// <returns>
+        /// Reference to the original modified matrix <see cref="Matrix"/>
+        /// </returns>
+        public static IMatrix<T> operator +(IMatrix<T> Matrix, decimal Value) => Value + Matrix;
+
+        /// <summary>
+        /// Performs a memberwise subtraction operation on the entire matrix member-wise
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// </summary>
+        /// <param name="Value"></param>
+        /// <param name="Matrix"></param>
+        /// <returns>
+        /// Reference to the original modified matrix <see cref="Matrix"/>
+        /// </returns>
+        public static IMatrix<T> operator -(decimal Value, IMatrix<T> Matrix)
+        {
+            Matrix.PerformMemberWise(Matrix.DecimalOperations.ReferenceAdder(-Value));
+            return Matrix;
+        }
+
+        /// <summary>
+        /// Performs a memberwise subtraction operation on the entire matrix member-wise
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// </summary>
+        /// <param name="Value"></param>
+        /// <param name="Matrix"></param>
+        /// <returns>
+        /// Reference to the original modified matrix <see cref="Matrix"/>
+        /// </returns>
+        public static IMatrix<T> operator -(IMatrix<T> Matrix, decimal Value) => Value - Matrix;
+
+        // start matrix
         /// <summary>
         /// Performs an in-place memberwise addition of the left and right Matrices. The left matrix is modified in-place. Right matrix is not mutated.
         /// <code>
-        /// Complexit: 
+        /// Complexity: O(n) 
         /// </code>
         /// </summary>
         /// <param name="Left"></param>
@@ -282,8 +830,19 @@ namespace NeuroSharp
                 // two matracies can only be multiplied if the number of columns of the first matrix is the same as the number of rows in the second matrix
                 Span<T> Result = MatrixOperations.MultiplyMatrices(Left, Right, Left.SameTypedOperations.TwoValueMultiplier, Left.SameTypedOperations.TwoRefenceAdder);
 
-                // multiplied matrices are always square
-                return new BaseMatrix<T>(Left.Rows, Right.Columns, Result, false);
+                // multiplied matrices are always squareish
+                return new BaseMatrix<T>(Left.Rows, Right.Columns, Result, false)
+                {
+                    SByteOperations = Left.SByteOperations,
+                    ByteOperations = Left.ByteOperations,
+                    ShortOperations = Left.ShortOperations,
+                    IntegerOperations = Left.IntegerOperations,
+                    LongOperations = Left.LongOperations,
+                    FloatOperations = Left.FloatOperations,
+                    DoubleOperations = Left.DoubleOperations,
+                    DecimalOperations = Left.DecimalOperations,
+                    SameTypedOperations = Left.SameTypedOperations,
+                };
             }
             else
             {
@@ -296,7 +855,7 @@ namespace NeuroSharp
         /// <summary>
         /// Performs an in-place memberwise subtraction of the left and right Matrices. The left matrix is modified in-place. Right matrix is not mutated.
         /// <code>
-        /// Complexit: 
+        /// Complexity: O(n) 
         /// </code>
         /// </summary>
         /// <param name="Left"></param>

@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NeuroSharp.Int
+namespace NeuroSharp.Short
 {
-    public class Matrix : BaseMatrix<int>, IMatrix<int>
+    public class Matrix : BaseMatrix<short>, IMatrix<short>
     {
         /// <summary>
         /// Creates a new int32 Matrix.
@@ -51,7 +51,7 @@ namespace NeuroSharp.Int
         /// <returns>
         /// <see cref="Matrix"/>
         /// </returns>
-        public Matrix(int Rows, int Columns, Func<int> T_Delegate) : base(Rows, Columns, T_Delegate) => AssignOperations();
+        public Matrix(int Rows, int Columns, Func<short> T_Delegate) : base(Rows, Columns, T_Delegate) => AssignOperations();
 
         /// <summary>
         /// Instantiates a new Matrix array with the given <paramref name="Rows"/> and <paramref name="Columns"/>. For each new item in all rows <paramref name="T_ProviderUsingRow"/> is invoked to set the value of the in32 in the spot, this <paramref name="T_ProviderUsingRow"/> is invoked with a <see cref="int"/> Row Index where that element is contained.
@@ -71,7 +71,7 @@ namespace NeuroSharp.Int
         /// <returns>
         /// <see cref="Matrix"/>
         /// </returns>
-        public Matrix(int Rows, int Columns, Func<int, int> T_DelegateUsingRowIndex) : base(Rows, Columns, T_DelegateUsingRowIndex) => AssignOperations();
+        public Matrix(int Rows, int Columns, Func<int, short> T_DelegateUsingRowIndex) : base(Rows, Columns, T_DelegateUsingRowIndex) => AssignOperations();
 
         /// <summary>
         /// Instantiates a new Matrix array with the given <paramref name="Rows"/> and <paramref name="Columns"/>. For each new item in all rows <paramref name="T_ProviderUsingIndexes"/> is invoked to set the value of the int32 in the spot, this <paramref name="T_ProviderUsingIndexes"/> is invoked with a <see cref="int"/> Row Index where that element is contained.
@@ -91,7 +91,7 @@ namespace NeuroSharp.Int
         /// <returns>
         /// <see cref="Matrix"/>
         /// </returns>
-        public Matrix(int Rows, int Columns, Func<int, int, int> T_DelegateUsingIndices) : base(Rows, Columns, T_DelegateUsingIndices) => AssignOperations();
+        public Matrix(int Rows, int Columns, Func<int, int, short> T_DelegateUsingIndices) : base(Rows, Columns, T_DelegateUsingIndices) => AssignOperations();
 
         /// <summary>
         /// Instantiates a new Matrix array with the given <paramref name="Rows"/> and <paramref name="Columns"/>. Each new item in the array is set to the provided <paramref name="DefaultValue"/>
@@ -111,7 +111,7 @@ namespace NeuroSharp.Int
         /// <returns>
         /// <see cref="Matrix"/>
         /// </returns>
-        public Matrix(int Rows, int Columns, int DefaultValue) : base(Rows, Columns, DefaultValue) => AssignOperations();
+        public Matrix(int Rows, int Columns, short DefaultValue) : base(Rows, Columns, DefaultValue) => AssignOperations();
 
         /// <summary>
         /// Instantiates a new Matrix array with the given <paramref name="Rows"/> and <paramref name="Columns"/>. Each new item in the array is set using the value returned from an iteration from <paramref name="Enumerable"/>. If the enumerable object fails to produce enough items to fill the entire matrix, all remaining values will be set to their default values. If <paramref name="MaxEnumeration"/> is not set then the enumerator will be attempted to be called for every item. If <paramref name="MaxEnumeration"/> IS set, the enumerable will only be used for <paramref name="MaxEnumeration"/> n elements before no longer being used to fill values in the matrix.
@@ -131,7 +131,7 @@ namespace NeuroSharp.Int
         /// <returns>
         /// <see cref="Matrix"/>
         /// </returns>
-        public Matrix(int Rows, int Columns, IEnumerable<int> Enumerable, int? MaxEnumeration = null) : base(Rows, Columns, Enumerable, MaxEnumeration) => AssignOperations();
+        public Matrix(int Rows, int Columns, IEnumerable<short> Enumerable, int? MaxEnumeration = null) : base(Rows, Columns, Enumerable, MaxEnumeration) => AssignOperations();
 
         /// <summary>
         /// Instantiates a new Matrix array with the given <paramref name="Rows"/> and <paramref name="Columns"/>. Items are filled into the matrix by slicing the provided <see cref="Span{T}"/>. If <paramref name="AsEnumerable"/> is set to true the <see cref="Span{T}"/> is used an an <see cref="IEnumerable{T}"/> object instead of single-dimensional contigous memory block. If the <see cref="Span{T}"/> is being used as an <see cref="IEnumerable{T}"/> fails to produce enough items to fill the entire matrix, all remaining values will be set to their <see langword="default"/> values.
@@ -151,51 +151,41 @@ namespace NeuroSharp.Int
         /// <returns>
         /// <see cref="Matrix"/>
         /// </returns>
-        public Matrix(int Rows, int Columns, Span<int> Values, bool AsEnumerable) : base(Rows, Columns, Values, AsEnumerable) => AssignOperations();
+        public Matrix(int Rows, int Columns, Span<short> Values, bool AsEnumerable) : base(Rows, Columns, Values, AsEnumerable) => AssignOperations();
 
-        public override OperationSet<int, int> IntegerOperations => SameTypedOperations;
+        public override OperationSet<short, short> ShortOperations => SameTypedOperations;
 
         private void AssignOperations()
         {
             SameTypedOperations = new()
             {
-                ReferenceAdder = (int Value) => (ref int element) => element += Value,
-                ReferenceMultiplier = (int Scalar) => (ref int element) => element *= Scalar,
-                TwoValueAdder = (ref int Left, ref int Right) => Left + Right,
-                TwoValueMultiplier = (ref int Left, ref int Right) => Left * Right,
-                TwoRefenceAdder = (ref int Left, ref int Right) => Left += Right,
-                TwoRefenceSubtractor = (ref int Left, ref int Right) => Left -= Right,
-                TwoReferenceMultiplier = (ref int Left, ref int Right) => Left *= Right,
-            };
-            ShortOperations = new()
-            {
-                ReferenceAdder = (short Value) => (ref int element) => element += Value,
-                ReferenceMultiplier = (short Scalar) => (ref int element) => element *= Scalar,
-                TwoValueAdder = (ref int Left, ref int Right) => Left + Right,
-                TwoValueMultiplier = (ref int Left, ref int Right) => Left * Right,
-                TwoRefenceAdder = (ref int Left, ref int Right) => Left += Right,
-                TwoRefenceSubtractor = (ref int Left, ref int Right) => Left -= Right,
-                TwoReferenceMultiplier = (ref int Left, ref int Right) => Left *= Right,
+                ReferenceAdder = (short Value) => (ref short element) => element += Value,
+                ReferenceMultiplier = (short Scalar) => (ref short element) => element *= Scalar,
+                TwoValueAdder = (ref short Left, ref short Right) => (short)(Left + Right),
+                TwoValueMultiplier = (ref short Left, ref short Right) => (short)(Left * Right),
+                TwoRefenceAdder = (ref short Left, ref short Right) => Left += Right,
+                TwoRefenceSubtractor = (ref short Left, ref short Right) => Left -= Right,
+                TwoReferenceMultiplier = (ref short Left, ref short Right) => Left *= Right,
             };
             ByteOperations = new()
             {
-                ReferenceAdder = (byte Value) => (ref int element) => element += Value,
-                ReferenceMultiplier = (byte Scalar) => (ref int element) => element *= Scalar,
-                TwoValueAdder = (ref int Left, ref int Right) => Left + Right,
-                TwoValueMultiplier = (ref int Left, ref int Right) => Left * Right,
-                TwoRefenceAdder = (ref int Left, ref int Right) => Left += Right,
-                TwoRefenceSubtractor = (ref int Left, ref int Right) => Left -= Right,
-                TwoReferenceMultiplier = (ref int Left, ref int Right) => Left *= Right,
+                ReferenceAdder = (byte Value) => (ref short element) => element += Value,
+                ReferenceMultiplier = (byte Scalar) => (ref short element) => element *= Scalar,
+                TwoValueAdder = (ref short Left, ref short Right) => (short)(Left + Right),
+                TwoValueMultiplier = (ref short Left, ref short Right) => (short)(Left * Right),
+                TwoRefenceAdder = (ref short Left, ref short Right) => Left += Right,
+                TwoRefenceSubtractor = (ref short Left, ref short Right) => Left -= Right,
+                TwoReferenceMultiplier = (ref short Left, ref short Right) => Left *= Right,
             };
             SByteOperations = new()
             {
-                ReferenceAdder = (sbyte Value) => (ref int element) => element += Value,
-                ReferenceMultiplier = (sbyte Scalar) => (ref int element) => element *= Scalar,
-                TwoValueAdder = (ref int Left, ref int Right) => Left + Right,
-                TwoValueMultiplier = (ref int Left, ref int Right) => Left * Right,
-                TwoRefenceAdder = (ref int Left, ref int Right) => Left += Right,
-                TwoRefenceSubtractor = (ref int Left, ref int Right) => Left -= Right,
-                TwoReferenceMultiplier = (ref int Left, ref int Right) => Left *= Right,
+                ReferenceAdder = (sbyte Value) => (ref short element) => element += Value,
+                ReferenceMultiplier = (sbyte Scalar) => (ref short element) => element *= Scalar,
+                TwoValueAdder = (ref short Left, ref short Right) => (short)(Left + Right),
+                TwoValueMultiplier = (ref short Left, ref short Right) => (short)(Left * Right),
+                TwoRefenceAdder = (ref short Left, ref short Right) => Left += Right,
+                TwoRefenceSubtractor = (ref short Left, ref short Right) => Left -= Right,
+                TwoReferenceMultiplier = (ref short Left, ref short Right) => Left *= Right,
             };
         }
     }

@@ -42,6 +42,10 @@ namespace NeuroSharp
         public virtual OperationSet<T, double> DoubleOperations { get; set; }
         public virtual OperationSet<T, float> FloatOperations { get; set; }
         public virtual OperationSet<T, decimal> DecimalOperations { get; set; }
+        public virtual OperationSet<T, long> LongOperations { get; set; }
+        public virtual OperationSet<T, short> ShortOperations { get; set; }
+        public virtual OperationSet<T, byte> ByteOperations { get; set; }
+        public virtual OperationSet<T, sbyte> SByteOperations { get; set; }
         public virtual OperationSet<T, T> SameTypedOperations { get; set; }
 
         // BEGIN CONSRUCTORS
