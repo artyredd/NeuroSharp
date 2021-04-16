@@ -50,5 +50,10 @@ namespace NeuroSharp
         {
             return new ArgumentException($"Failed to create a jagged array matrix from Span<T>. The span's length({spanLength}) must be equal to the number of rows({providedRows}) multiplied by the number of columns({providedColumns}). Use {nameof(ArrayFactory.Create)}<T>(int, int, IEnumerable<T>) if you're unable to predict if the content can properly fill the resultant matrix.");
         }
+
+        public static Exception UnexpectedMatrixShape(int Rows, int Columns, string ExpectedShape, string message = "")
+        {
+            return new ArgumentException($"Unexpected matrix shape, expected a {ExpectedShape} matrix, but got {Rows}{Columns} instead. {message}");
+        }
     }
 }

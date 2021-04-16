@@ -28,8 +28,8 @@ namespace NeuroSharp.Bench
         [BenchmarkDotNet.Attributes.Benchmark]
         public IMatrix<sbyte> Test_0()
         {
-            IMatrix<sbyte> left = new Matrix(MatrixDimensions[0].Rows, MatrixDimensions[0].Columns, GetRandom());
-            IMatrix<sbyte> right = new Matrix(MatrixDimensions[0].Columns, MatrixDimensions[0].Rows, GetRandom());
+            IMatrix<sbyte> left = new Matrix(MatriceController.MatrixDimensions[0].Rows, MatriceController.MatrixDimensions[0].Columns, GetRandom());
+            IMatrix<sbyte> right = new Matrix(MatriceController.MatrixDimensions[0].Columns, MatriceController.MatrixDimensions[0].Rows, GetRandom());
 
             return left * right;
         }
@@ -39,8 +39,8 @@ namespace NeuroSharp.Bench
         {
             int num = 1;
 
-            IMatrix<sbyte> left = new Matrix(MatrixDimensions[num].Rows, MatrixDimensions[num].Columns, GetRandom());
-            IMatrix<sbyte> right = new Matrix(MatrixDimensions[num].Columns, MatrixDimensions[num].Rows, GetRandom());
+            IMatrix<sbyte> left = new Matrix(MatriceController.MatrixDimensions[num].Rows, MatriceController.MatrixDimensions[num].Columns, GetRandom());
+            IMatrix<sbyte> right = new Matrix(MatriceController.MatrixDimensions[num].Columns, MatriceController.MatrixDimensions[num].Rows, GetRandom());
 
             return left * right;
         }
@@ -50,8 +50,8 @@ namespace NeuroSharp.Bench
         {
             int num = 2;
 
-            IMatrix<sbyte> left = new Matrix(MatrixDimensions[num].Rows, MatrixDimensions[num].Columns, GetRandom());
-            IMatrix<sbyte> right = new Matrix(MatrixDimensions[num].Columns, MatrixDimensions[num].Rows, GetRandom());
+            IMatrix<sbyte> left = new Matrix(MatriceController.MatrixDimensions[num].Rows, MatriceController.MatrixDimensions[num].Columns, GetRandom());
+            IMatrix<sbyte> right = new Matrix(MatriceController.MatrixDimensions[num].Columns, MatriceController.MatrixDimensions[num].Rows, GetRandom());
 
             return left * right;
         }
@@ -61,8 +61,8 @@ namespace NeuroSharp.Bench
         {
             int num = 3;
 
-            IMatrix<sbyte> left = new Matrix(MatrixDimensions[num].Rows, MatrixDimensions[num].Columns, GetRandom());
-            IMatrix<sbyte> right = new Matrix(MatrixDimensions[num].Columns, MatrixDimensions[num].Rows, GetRandom());
+            IMatrix<sbyte> left = new Matrix(MatriceController.MatrixDimensions[num].Rows, MatriceController.MatrixDimensions[num].Columns, GetRandom());
+            IMatrix<sbyte> right = new Matrix(MatriceController.MatrixDimensions[num].Columns, MatriceController.MatrixDimensions[num].Rows, GetRandom());
 
             return left * right;
         }
@@ -72,8 +72,8 @@ namespace NeuroSharp.Bench
         {
             int num = 4;
 
-            IMatrix<sbyte> left = new Matrix(MatrixDimensions[num].Rows, MatrixDimensions[num].Columns, GetRandom());
-            IMatrix<sbyte> right = new Matrix(MatrixDimensions[num].Columns, MatrixDimensions[num].Rows, GetRandom());
+            IMatrix<sbyte> left = new Matrix(MatriceController.MatrixDimensions[num].Rows, MatriceController.MatrixDimensions[num].Columns, GetRandom());
+            IMatrix<sbyte> right = new Matrix(MatriceController.MatrixDimensions[num].Columns, MatriceController.MatrixDimensions[num].Rows, GetRandom());
 
             return left * right;
         }
@@ -83,8 +83,8 @@ namespace NeuroSharp.Bench
         {
             int num = 5;
 
-            IMatrix<sbyte> left = new Matrix(MatrixDimensions[num].Rows, MatrixDimensions[num].Columns, GetRandom());
-            IMatrix<sbyte> right = new Matrix(MatrixDimensions[num].Columns, MatrixDimensions[num].Rows, GetRandom());
+            IMatrix<sbyte> left = new Matrix(MatriceController.MatrixDimensions[num].Rows, MatriceController.MatrixDimensions[num].Columns, GetRandom());
+            IMatrix<sbyte> right = new Matrix(MatriceController.MatrixDimensions[num].Columns, MatriceController.MatrixDimensions[num].Rows, GetRandom());
 
             return left * right;
         }
@@ -94,8 +94,8 @@ namespace NeuroSharp.Bench
         {
             int num = 6;
 
-            IMatrix<sbyte> left = new Matrix(MatrixDimensions[num].Rows, MatrixDimensions[num].Columns, GetRandom());
-            IMatrix<sbyte> right = new Matrix(MatrixDimensions[num].Columns, MatrixDimensions[num].Rows, GetRandom());
+            IMatrix<sbyte> left = new Matrix(MatriceController.MatrixDimensions[num].Rows, MatriceController.MatrixDimensions[num].Columns, GetRandom());
+            IMatrix<sbyte> right = new Matrix(MatriceController.MatrixDimensions[num].Columns, MatriceController.MatrixDimensions[num].Rows, GetRandom());
 
             return left * right;
         }
@@ -105,8 +105,8 @@ namespace NeuroSharp.Bench
         {
             int num = 7;
 
-            IMatrix<sbyte> left = new Matrix(MatrixDimensions[num].Rows, MatrixDimensions[num].Columns, GetRandom());
-            IMatrix<sbyte> right = new Matrix(MatrixDimensions[num].Columns, MatrixDimensions[num].Rows, GetRandom());
+            IMatrix<sbyte> left = new Matrix(MatriceController.MatrixDimensions[num].Rows, MatriceController.MatrixDimensions[num].Columns, GetRandom());
+            IMatrix<sbyte> right = new Matrix(MatriceController.MatrixDimensions[num].Columns, MatriceController.MatrixDimensions[num].Rows, GetRandom());
 
             return left * right;
         }
@@ -116,8 +116,8 @@ namespace NeuroSharp.Bench
         {
             int num = 8;
 
-            IMatrix<sbyte> left = new Matrix(MatrixDimensions[num].Rows, MatrixDimensions[num].Columns, GetRandom());
-            IMatrix<sbyte> right = new Matrix(MatrixDimensions[num].Columns, MatrixDimensions[num].Rows, GetRandom());
+            IMatrix<sbyte> left = new Matrix(MatriceController.MatrixDimensions[num].Rows, MatriceController.MatrixDimensions[num].Columns, GetRandom());
+            IMatrix<sbyte> right = new Matrix(MatriceController.MatrixDimensions[num].Columns, MatriceController.MatrixDimensions[num].Rows, GetRandom());
 
             return left * right;
         }
@@ -127,8 +127,8 @@ namespace NeuroSharp.Bench
         {
             int num = 9;
 
-            IMatrix<sbyte> left = new Matrix(MatrixDimensions[num].Rows, MatrixDimensions[num].Columns, GetRandom());
-            IMatrix<sbyte> right = new Matrix(MatrixDimensions[num].Columns, MatrixDimensions[num].Rows, GetRandom());
+            IMatrix<sbyte> left = new Matrix(MatriceController.MatrixDimensions[num].Rows, MatriceController.MatrixDimensions[num].Columns, GetRandom());
+            IMatrix<sbyte> right = new Matrix(MatriceController.MatrixDimensions[num].Columns, MatriceController.MatrixDimensions[num].Rows, GetRandom());
 
             return left * right;
         }
