@@ -160,6 +160,7 @@ namespace NeuroSharp.Decimal
             SameTypedOperations = new()
             {
                 ReferenceAdder = (decimal Value) => (ref decimal element) => element += Value,
+                ReferenceSubtractor = (decimal Value) => (ref decimal element) => element -= Value,
                 ReferenceMultiplier = (decimal Scalar) => (ref decimal element) => element *= Scalar,
                 TwoValueAdder = (ref decimal Left, ref decimal Right) => Left + Right,
                 TwoValueMultiplier = (ref decimal Left, ref decimal Right) => Left * Right,
@@ -170,6 +171,7 @@ namespace NeuroSharp.Decimal
             IntegerOperations = new()
             {
                 ReferenceAdder = (int Value) => (ref decimal element) => element += Value,
+                ReferenceSubtractor = (int Value) => (ref decimal element) => element -= Value,
                 ReferenceMultiplier = (int Scalar) => (ref decimal element) => element *= Scalar,
                 TwoValueAdder = (ref decimal Left, ref decimal Right) => Left + Right,
                 TwoValueMultiplier = (ref decimal Left, ref decimal Right) => Left * Right,
@@ -180,6 +182,7 @@ namespace NeuroSharp.Decimal
             FloatOperations = new()
             {
                 ReferenceAdder = (float Value) => (ref decimal element) => element += (decimal)Value,
+                ReferenceSubtractor = (float Value) => (ref decimal element) => element -= (decimal)Value,
                 ReferenceMultiplier = (float Scalar) => (ref decimal element) => element *= (decimal)Scalar,
                 TwoValueAdder = (ref decimal Left, ref decimal Right) => Left + Right,
                 TwoValueMultiplier = (ref decimal Left, ref decimal Right) => Left * Right,
@@ -190,6 +193,7 @@ namespace NeuroSharp.Decimal
             DoubleOperations = new()
             {
                 ReferenceAdder = (double Value) => (ref decimal element) => element += (decimal)Value,
+                ReferenceSubtractor = (double Value) => (ref decimal element) => element -= (decimal)Value,
                 ReferenceMultiplier = (double Scalar) => (ref decimal element) => element *= (decimal)Scalar,
                 TwoValueAdder = (ref decimal Left, ref decimal Right) => Left + Right,
                 TwoValueMultiplier = (ref decimal Left, ref decimal Right) => Left * Right,

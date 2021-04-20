@@ -595,5 +595,193 @@ namespace NeuroSharp.Tests
             // check to see if the duplicate array was changed
             Assert.True(dupe[0, 2] == 2);
         }
+        [Fact]
+        public void Multiply_Hadamard()
+        {
+            var first = new double[] { 2, 4, 6, 8 };
+            var second = new double[] { 16, 32, 64, 128 };
+
+            IMatrix<double> left = new Double.Matrix(2, 2, first);
+            IMatrix<double> right = new Double.Matrix(2, 2, second);
+
+            /*
+                Expected Result:
+                2 * 16 | 4 * 32
+                6 * 64 | 8 * 128
+            */
+
+            var result = left % right;
+
+            Assert.Equal(2 * 16, result[0, 0]);
+            Assert.Equal(4 * 32, result[0, 1]);
+            Assert.Equal(6 * 64, result[1, 0]);
+            Assert.Equal(8 * 128, result[1, 1]);
+
+            // verify that the operator did not mutate the originals
+            IMatrix<double> left_verification = new Double.Matrix(2, 2, first);
+            IMatrix<double> right_verification = new Double.Matrix(2, 2, second);
+
+            Assert.Equal(left_verification, left);
+
+            Assert.Equal(right_verification, right);
+
+            // change value in result and verify immutability of original martices
+            result[0, 0] = 420;
+
+            Assert.Equal(left_verification, left);
+
+            Assert.Equal(right_verification, right);
+
+            // change value in left verify that equals override is properly working and we can trust the results of this test
+            left[0, 0] = 120;
+
+            Assert.NotEqual(left_verification, left);
+        }
+
+        [Theory]
+        [InlineData(12, 11, 12, 34)]
+        [InlineData(3, 4, 4, 6)]
+        [InlineData(1, 1, 1, 1)]
+        [InlineData(4, 4, 4, 4)]
+        [InlineData(11, 99, 1, 99)]
+        [InlineData(2, 2, 2, 1)]
+        public void Multiply_Product(int LeftRows, int LeftColumns, int RightRows, int RightCols)
+        {
+
+            IMatrix<float> left = new Float.Matrix(LeftRows, LeftColumns, 1.0f);
+            IMatrix<float> right = new Float.Matrix(RightRows, RightCols, 0);
+
+            // store these later to verify that originals are not mutated
+            IMatrix<float> leftVerification = left.Duplicate();
+            IMatrix<float> rightVerification = right.Duplicate();
+
+            // make sure if the params given should throw they do
+            if (LeftColumns != RightRows)
+            {
+
+                IMatrix<float> ShouldThrow()
+                {
+                    return left * right;
+                }
+
+                Assert.Throws<InvalidOperationException>(ShouldThrow);
+                return;
+            }
+
+            IMatrix<float> result = left * right;
+
+            // the result should always have the rows of the first and the colums of the second
+            Assert.Equal(left.Rows, result.Rows);
+
+            Assert.Equal(right.Columns, result.Columns);
+
+            // since the inputs are ones and 0s make sure they are all zeros since that's 1 x 0
+
+            foreach (float[] row in result)
+            {
+                foreach (var item in row)
+                {
+                    Assert.Equal(0, item);
+                }
+            }
+
+            // verify that neither original matrices were mutated by the multiplication
+            Assert.Equal(leftVerification, left);
+            Assert.Equal(rightVerification, right);
+
+            // change values in the original to verify .Equals is working
+            left[0, 0] = 14;
+            right[0, 0] = 10;
+
+            Assert.NotEqual(leftVerification, left);
+            Assert.NotEqual(rightVerification, right);
+
+            // complete a defaul multiplication independant of params to verify specific mechanics
+            left = new Float.Matrix(3, 4, new float[] { 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 });
+            right = new Float.Matrix(4, 2, new float[] { 1, 2, 3, 4, 5, 6, 7, 8 });
+
+            leftVerification = left.Duplicate();
+            rightVerification = right.Duplicate();
+
+            result = left * right;
+
+            // make sure the shape of the result is what we expect
+            // we should expect the rows of the left and the cols of the right
+            Assert.Equal(left.Rows, result.Rows);
+
+            Assert.Equal(right.Columns, result.Columns);
+
+            // verify the values as correct, these are manually asserted to extra-verify the accuracy of this test
+            // this is probably the most important test here
+            var flat = result.ToOneDimension();
+
+            Assert.Equal(158, flat[0]);
+            Assert.Equal(200, flat[1]);
+            Assert.Equal(94, flat[2]);
+            Assert.Equal(120, flat[3]);
+            Assert.Equal(30, flat[4]);
+            Assert.Equal(40, flat[5]);
+        }
+
+        [Fact]
+        public void Operator_Add_DoesNotMutate()
+        {
+            IMatrix<double> left = new Double.Matrix(2, 2, new double[] { 1, 2, 3, 4 });
+            IMatrix<double> right = new Double.Matrix(2, 2, new double[] { 4, 3, 2, 1 });
+
+            IMatrix<double> leftStored = left.Duplicate();
+            IMatrix<double> rightStored = right.Duplicate();
+
+            // subtract
+            IMatrix<double> result = left - right;
+
+            // make sure the originals match the stored versions
+            Assert.Equal(leftStored, left);
+            Assert.Equal(rightStored, right);
+
+            // chaneg a value in the result and verify that the result is a value and not a reference to the roginal matrix
+            result[0, 0] = -1;
+
+            Assert.Equal(leftStored, left);
+            Assert.Equal(rightStored, right);
+
+            // change values in the original and make sure that the equality comparisons are properly working
+            left[0, 0] = -1;
+            right[0, 0] = 2;
+
+            Assert.NotEqual(leftStored, left);
+            Assert.NotEqual(rightStored, right);
+
+            // make sure the + oppertaor throws with ivalid matrices
+            left = new Double.Matrix(2, 3, 7);
+            void ShouldThrow()
+            {
+                var x = left + right;
+            }
+            Assert.Throws<InvalidOperationException>(ShouldThrow);
+        }
+
+        [Fact]
+        public void MultiplyWorks()
+        {
+            IMatrix<double> left = new Double.Matrix(2, 2, new double[] { -0.79, -0.56, 0.46, 0.11 });
+            IMatrix<double> right = new Double.Matrix(2, 1, new double[] { 1, 0 });
+
+            IMatrix<double> result = left * right;
+
+            var onedim = result.ToOneDimension();
+
+            Assert.Equal(-0.79, onedim[0]);
+            Assert.Equal(0.46, onedim[1]);
+
+            left = new Double.Matrix(1, 2, new double[] { 0.52, -0.27 });
+            right = new Double.Matrix(2, 1, new double[] { 0.68, 0.38 });
+
+            result = left * right;
+
+            onedim = result.ToOneDimension();
+
+            Assert.Equal(0.251, onedim[0]);
+        }
     }
 }

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace NeuroSharp
 {
-    public class OperationSet<T, U>
+    public class OperationSet<T, U> where T : unmanaged, IComparable<T>, IEquatable<T>
     {
         /// <summary>
         /// Represents a delegate that when called with U Value as a parameter, it returns a <see cref="MatrixOperations.SingleElementOperation{T}"/>.
@@ -28,7 +28,7 @@ namespace NeuroSharp
         /// <returns>
         /// delegate that returns a <see cref="MatrixOperations.SingleElementOperation{T}"/>
         /// </returns>
-        public delegate MatrixOperations.SingleElementOperation<T> SingleElementParameterizedOperation(U Value);
+        public delegate MatrixOperations<T>.SingleElementOperation<T> SingleElementParameterizedOperation(U Value);
 
         /// <summary>
         /// Represents a delegate that when called with U Value as a parameter, it returns a <see cref="MatrixOperations.SingleElementOperation{T}"/>.
@@ -54,6 +54,31 @@ namespace NeuroSharp
         /// delegate that returns a <see cref="MatrixOperations.SingleElementOperation{T}"/>
         /// </returns>
         public SingleElementParameterizedOperation ReferenceAdder { get; set; }
+
+        /// <summary>
+        /// Represents a delegate that when called with U Value as a parameter, it returns a <see cref="MatrixOperations.SingleElementOperation{T}"/>.
+        /// <para>
+        /// This delegate should take the incoming number U and the reference value T and subtract U from T and set T (the - operator);
+        /// </para>
+        /// <para>
+        /// Example:
+        /// </para>
+        /// <code>
+        /// SingleElementParameterizedOperation ReferenceAdder = (U Value) => (ref T MatrixElement) => MatrixElement -= Value;
+        /// </code>
+        /// <code>
+        /// ReferenceSubtractor(12);
+        /// </code>
+        /// Output:
+        /// <code>
+        /// (ref T MatrixElement) => MatrixElement -= 12;
+        /// </code>
+        /// </summary>
+        /// <param name="Value"></param>
+        /// <returns>
+        /// delegate that returns a <see cref="MatrixOperations.SingleElementOperation{T}"/>
+        /// </returns>
+        public SingleElementParameterizedOperation ReferenceSubtractor { get; set; }
 
         /// <summary>
         /// Represents a delegate that when called with U Value as a parameter, it returns a <see cref="MatrixOperations.SingleElementOperation{T}"/>.
@@ -103,7 +128,7 @@ namespace NeuroSharp
         /// </code>
         /// </summary>
         /// <param name="Value"></param>
-        public MatrixOperations.TwoElementOperation<T> TwoValueAdder { get; set; }
+        public MatrixOperations<T>.TwoElementOperation<T> TwoValueAdder { get; set; }
 
         /// <summary>
         /// Represents a delegate that when called multiplies two values of the given types together and returns T
@@ -128,7 +153,7 @@ namespace NeuroSharp
         /// </code>
         /// </summary>
         /// <param name="Value"></param>
-        public MatrixOperations.TwoElementOperation<T> TwoValueMultiplier { get; set; }
+        public MatrixOperations<T>.TwoElementOperation<T> TwoValueMultiplier { get; set; }
 
         /// <summary>
         /// Represents a delegate that when called adds two values of the given types together and mutates the incoming T reference value
@@ -153,7 +178,7 @@ namespace NeuroSharp
         /// </code>
         /// </summary>
         /// <param name="Value"></param>
-        public MatrixOperations.TwoElementOperation<T> TwoRefenceAdder { get; set; }
+        public MatrixOperations<T>.TwoElementOperation<T> TwoRefenceAdder { get; set; }
 
         /// <summary>
         /// Represents a delegate that when called subtracts two values of the given types and mutates the incoming T reference value
@@ -178,7 +203,7 @@ namespace NeuroSharp
         /// </code>
         /// </summary>
         /// <param name="Value"></param>
-        public MatrixOperations.TwoElementOperation<T> TwoRefenceSubtractor { get; set; }
+        public MatrixOperations<T>.TwoElementOperation<T> TwoRefenceSubtractor { get; set; }
 
         /// <summary>
         /// Represents a delegate that when called multiplies two values of the given types and mutates the incoming T reference value
@@ -202,6 +227,6 @@ namespace NeuroSharp
         /// 9
         /// </code>
         /// </summary>
-        public MatrixOperations.TwoElementOperation<T> TwoReferenceMultiplier { get; set; }
+        public MatrixOperations<T>.TwoElementOperation<T> TwoReferenceMultiplier { get; set; }
     }
 }

@@ -113,7 +113,7 @@ namespace NeuroSharp.Tests
                 [ 6 6 6 6 6 6 6 6 6 6 ]
             */
 
-            var array = MatrixOperations.MultiplyMatrices(left, right, left.SameTypedOperations.TwoValueMultiplier, left.SameTypedOperations.TwoRefenceAdder
+            var array = MatrixOperations<int>.MultiplyMatrices(left, right, left.SameTypedOperations.TwoValueMultiplier, left.SameTypedOperations.TwoRefenceAdder
                 );
 
             foreach (var item in array)

@@ -91,7 +91,7 @@ namespace NeuroSharp
                     for (int column = 0; column < Columns; column++)
                     {
                         // if we get a value back from the enumerator then set it.
-                        if (row + column < MaxEnumeration && Enumerator.MoveNext())
+                        if (row + column <= MaxEnumeration && Enumerator.MoveNext())
                         {
                             RowSpan[column] = Enumerator.Current;
                         }

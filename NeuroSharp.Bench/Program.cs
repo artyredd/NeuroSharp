@@ -12,4 +12,4 @@ BenchmarkRunner.Run(typeof(MatriceInt), DefaultConfig.Instance.AddDiagnoser(Memo
 BenchmarkRunner.Run(typeof(MatriceLong), DefaultConfig.Instance.AddDiagnoser(MemoryDiagnoser.Default));
 BenchmarkRunner.Run(typeof(MatriceFloat), DefaultConfig.Instance.AddDiagnoser(MemoryDiagnoser.Default));
 BenchmarkRunner.Run(typeof(MatriceDouble), DefaultConfig.Instance.AddDiagnoser(MemoryDiagnoser.Default));
-BenchmarkRunner.Run(typeof(MatriceDecimal), DefaultConfig.Instance.AddDiagnoser(MemoryDiagnoser.Default));
+BenchmarkRunner.Run(typeof(MatriceDecimal),  DefaultConfig.Instance.AddDiagnoser(MemoryDiagnoser.Default));

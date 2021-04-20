@@ -106,35 +106,7 @@ namespace NeuroSharp
 
         protected BaseMatrix() { }
 
-        /// <summary>
-        /// Invokes the provided operation member-wise on this matrix (on each element)
-        /// <code>
-        /// Complexity: O(n)
-        /// </code>
-        /// <para>
-        /// Elements are mutated in-place using <c>ref</c>
-        /// </para>
-        /// Example Usage:
-        /// <code>
-        /// Matrix&lt;int&gt; matrix = new(2,2);
-        /// </code>
-        /// <code>
-        /// matrix[0][0] = 4; matrix[0, 1] = 1;
-        /// </code>
-        /// <code>
-        /// matrix.ApplyMemberWiseOperation((ref int x) => x *= 2);
-        /// </code>
-        /// Outputs:
-        /// <code>
-        /// 8 2
-        /// </code>
-        /// <code>
-        /// 0 0
-        /// </code>
-        /// </summary>
-        /// <param name="Operation"></param>
-        /// <returns></returns>
-        public void PerformMemberWise(MatrixOperations.SingleElementOperation<T> Operation) => MatrixOperations.PerformOperationMemberwise(this, Operation);
+        public void PerformMemberWise(MatrixOperations<T>.SingleElementOperation<T> Operation) => MatrixOperations<T>.PerformMutableOperation(this, Operation);
 
         // BEGIN ARRAY EXTENSION PROPERTIES AND METHODS
 
@@ -191,7 +163,16 @@ namespace NeuroSharp
 
             var newMatrix = new BaseMatrix<T>()
             {
-                _Matrix = ClonedMatrix
+                _Matrix = ClonedMatrix,
+                SByteOperations = this.SByteOperations,
+                ByteOperations = this.ByteOperations,
+                ShortOperations = this.ShortOperations,
+                IntegerOperations = this.IntegerOperations,
+                LongOperations = this.LongOperations,
+                FloatOperations = this.FloatOperations,
+                DoubleOperations = this.DoubleOperations,
+                DecimalOperations = this.DecimalOperations,
+                SameTypedOperations = this.SameTypedOperations,
             };
 
             return newMatrix;

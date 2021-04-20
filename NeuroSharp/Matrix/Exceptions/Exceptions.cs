@@ -20,7 +20,7 @@ namespace NeuroSharp
         /// <returns></returns>
         public static Exception InvalidMatrix_Operation(string Operation, string LeftType, string rightType)
         {
-            return new InvalidOperationException($"Attempted to perform a lossy operation on a matrix by attempting to {Operation} with a matrix that contains {LeftType}s with a {rightType}.");
+            return new InvalidOperationException($"Attempted to perform a lossy operation on a matrix by attempting to {Operation} with a matrix that contains {LeftType}s with a {rightType}. Are you missing a cast?");
         }
 
         /// <summary>
@@ -32,9 +32,9 @@ namespace NeuroSharp
         /// <param name="LeftRows"></param>
         /// <param name="RightColumns"></param>
         /// <returns></returns>
-        public static Exception IncompatibleMatrixShapeForMultiplication(int LeftRows, int RightColumns)
+        public static Exception IncompatibleMatrixShapeForMultiplication<T>(IMatrix<T> Left, IMatrix<T> Right) where T : unmanaged, IComparable<T>, IEquatable<T>
         {
-            return new InvalidOperationException($"Matrices incompatible for multiplication.The number of columns in the first matrix({ LeftRows}) must be equal to the number of rows in the second matrix({ RightColumns })");
+            return new InvalidOperationException($"Matrices incompatible for multiplication ({Left.Rows}x{Left.Columns})x({Right.Rows}x{Right.Columns}). The number of columns in the left matrix must be equal to the number of rows in the right matrix. For the Hadamard product use the Modulo Operator(%).");
         }
 
         /// <summary>
@@ -51,9 +51,20 @@ namespace NeuroSharp
             return new ArgumentException($"Failed to create a jagged array matrix from Span<T>. The span's length({spanLength}) must be equal to the number of rows({providedRows}) multiplied by the number of columns({providedColumns}). Use {nameof(ArrayFactory.Create)}<T>(int, int, IEnumerable<T>) if you're unable to predict if the content can properly fill the resultant matrix.");
         }
 
-        public static Exception UnexpectedMatrixShape(int Rows, int Columns, string ExpectedShape, string message = "")
+        /// <summary>
+        /// Creates and returns an <see cref="InvalidOperationException"/> with the following message:
+        /// <code>
+        /// Unexpected matrix shape, expected a [congruent] matrix Left([4]x[4]) Right([4]x[3]). [Message]
+        /// </code>
+        /// </summary>
+        /// <param name="Rows"></param>
+        /// <param name="Columns"></param>
+        /// <param name="ExpectedShape"></param>
+        /// <param name="message"></param>
+        /// <returns></returns>
+        public static Exception UnexpectedMatrixShape<T>(IMatrix<T> Left, IMatrix<T> right, string ExpectedShape, string message = "") where T : unmanaged, IComparable<T>, IEquatable<T>
         {
-            return new ArgumentException($"Unexpected matrix shape, expected a {ExpectedShape} matrix, but got {Rows}{Columns} instead. {message}");
+            return new InvalidOperationException($"Unexpected matrix shape, expected a {ExpectedShape} matrix Left({Left.Rows}x{Left.Columns}) Right({right.Rows}x{right.Columns}). {message}");
         }
     }
 }

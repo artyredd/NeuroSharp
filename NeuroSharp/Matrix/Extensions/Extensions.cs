@@ -77,7 +77,18 @@ namespace NeuroSharp
         public static IMatrix<T> Transpose<T>(this IMatrix<T> sourceMatrix) where T : unmanaged, IComparable<T>, IEquatable<T>
         {
             // ceate a new matrix with opposite shape
-            BaseMatrix<T> targetMatrix = new(sourceMatrix.Columns, sourceMatrix.Rows);
+            BaseMatrix<T> targetMatrix = new(sourceMatrix.Columns, sourceMatrix.Rows)
+            {
+                SameTypedOperations = sourceMatrix.SameTypedOperations,
+                SByteOperations = sourceMatrix.SByteOperations,
+                ByteOperations = sourceMatrix.ByteOperations,
+                ShortOperations = sourceMatrix.ShortOperations,
+                IntegerOperations = sourceMatrix.IntegerOperations,
+                LongOperations = sourceMatrix.LongOperations,
+                FloatOperations = sourceMatrix.FloatOperations,
+                DoubleOperations = sourceMatrix.DoubleOperations,
+                DecimalOperations = sourceMatrix.DecimalOperations,
+            };
 
             /*
                 Expected Behaviour
@@ -140,6 +151,26 @@ namespace NeuroSharp
             }
 
             return targetMatrix;
+        }
+        public static bool Equals<T>(this IMatrix<T> Left, IMatrix<T> right) where T : unmanaged, IComparable<T>, IEquatable<T>
+        {
+            if (Left.Rows != right.Rows || Left.Columns != right.Columns)
+            {
+                return false;
+            }
+
+
+            for (int rows = 0; rows < Left.Rows; rows++)
+            {
+                for (int cols = 0; cols < Left.Columns; cols++)
+                {
+                    if (Left[rows, cols].Equals(right[rows, cols]) is false)
+                    {
+                        return false;
+                    }
+                }
+            }
+            return true;
         }
     }
 }

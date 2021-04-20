@@ -160,6 +160,7 @@ namespace NeuroSharp.Long
             SameTypedOperations = new()
             {
                 ReferenceAdder = (long Value) => (ref long element) => element += Value,
+                ReferenceSubtractor = (long Value) => (ref long element) => element -= Value,
                 ReferenceMultiplier = (long Scalar) => (ref long element) => element *= Scalar,
                 TwoValueAdder = (ref long Left, ref long Right) => Left + Right,
                 TwoValueMultiplier = (ref long Left, ref long Right) => Left * Right,
@@ -170,6 +171,7 @@ namespace NeuroSharp.Long
             IntegerOperations = new()
             {
                 ReferenceAdder = (int Value) => (ref long element) => element += Value,
+                ReferenceSubtractor = (int Value) => (ref long element) => element -= Value,
                 ReferenceMultiplier = (int Scalar) => (ref long element) => element *= Scalar,
                 TwoValueAdder = (ref long Left, ref long Right) => Left + Right,
                 TwoValueMultiplier = (ref long Left, ref long Right) => Left * Right,
@@ -180,6 +182,7 @@ namespace NeuroSharp.Long
             ShortOperations = new()
             {
                 ReferenceAdder = (short Value) => (ref long element) => element += Value,
+                ReferenceSubtractor = (short Value) => (ref long element) => element -= Value,
                 ReferenceMultiplier = (short Scalar) => (ref long element) => element *= Scalar,
                 TwoValueAdder = (ref long Left, ref long Right) => Left + Right,
                 TwoValueMultiplier = (ref long Left, ref long Right) => Left * Right,
@@ -190,6 +193,7 @@ namespace NeuroSharp.Long
             ByteOperations = new()
             {
                 ReferenceAdder = (byte Value) => (ref long element) => element += Value,
+                ReferenceSubtractor = (byte Value) => (ref long element) => element -= Value,
                 ReferenceMultiplier = (byte Scalar) => (ref long element) => element *= Scalar,
                 TwoValueAdder = (ref long Left, ref long Right) => Left + Right,
                 TwoValueMultiplier = (ref long Left, ref long Right) => Left * Right,
@@ -200,6 +204,7 @@ namespace NeuroSharp.Long
             SByteOperations = new()
             {
                 ReferenceAdder = (sbyte Value) => (ref long element) => element += Value,
+                ReferenceSubtractor = (sbyte Value) => (ref long element) => element -= Value,
                 ReferenceMultiplier = (sbyte Scalar) => (ref long element) => element *= Scalar,
                 TwoValueAdder = (ref long Left, ref long Right) => Left + Right,
                 TwoValueMultiplier = (ref long Left, ref long Right) => Left * Right,

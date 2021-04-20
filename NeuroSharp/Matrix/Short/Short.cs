@@ -160,6 +160,7 @@ namespace NeuroSharp.Short
             SameTypedOperations = new()
             {
                 ReferenceAdder = (short Value) => (ref short element) => element += Value,
+                ReferenceSubtractor = (short Value) => (ref short element) => element -= Value,
                 ReferenceMultiplier = (short Scalar) => (ref short element) => element *= Scalar,
                 TwoValueAdder = (ref short Left, ref short Right) => (short)(Left + Right),
                 TwoValueMultiplier = (ref short Left, ref short Right) => (short)(Left * Right),
@@ -170,6 +171,7 @@ namespace NeuroSharp.Short
             ByteOperations = new()
             {
                 ReferenceAdder = (byte Value) => (ref short element) => element += Value,
+                ReferenceSubtractor = (byte Value) => (ref short element) => element -= Value,
                 ReferenceMultiplier = (byte Scalar) => (ref short element) => element *= Scalar,
                 TwoValueAdder = (ref short Left, ref short Right) => (short)(Left + Right),
                 TwoValueMultiplier = (ref short Left, ref short Right) => (short)(Left * Right),
@@ -180,7 +182,19 @@ namespace NeuroSharp.Short
             SByteOperations = new()
             {
                 ReferenceAdder = (sbyte Value) => (ref short element) => element += Value,
+                ReferenceSubtractor = (sbyte Value) => (ref short element) => element -= Value,
                 ReferenceMultiplier = (sbyte Scalar) => (ref short element) => element *= Scalar,
+                TwoValueAdder = (ref short Left, ref short Right) => (short)(Left + Right),
+                TwoValueMultiplier = (ref short Left, ref short Right) => (short)(Left * Right),
+                TwoRefenceAdder = (ref short Left, ref short Right) => Left += Right,
+                TwoRefenceSubtractor = (ref short Left, ref short Right) => Left -= Right,
+                TwoReferenceMultiplier = (ref short Left, ref short Right) => Left *= Right,
+            };
+            IntegerOperations = new()
+            {
+                ReferenceAdder = (int Value) => (ref short element) => element += (short)Value,
+                ReferenceSubtractor = (int Value) => (ref short element) => element -= (short)Value,
+                ReferenceMultiplier = (int Scalar) => (ref short element) => element *= (short)Scalar,
                 TwoValueAdder = (ref short Left, ref short Right) => (short)(Left + Right),
                 TwoValueMultiplier = (ref short Left, ref short Right) => (short)(Left * Right),
                 TwoRefenceAdder = (ref short Left, ref short Right) => Left += Right,

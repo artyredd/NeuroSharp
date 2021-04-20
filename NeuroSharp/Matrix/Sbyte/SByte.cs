@@ -160,6 +160,7 @@ namespace NeuroSharp.SByte
             SameTypedOperations = new()
             {
                 ReferenceAdder = (sbyte Value) => (ref sbyte element) => element += Value,
+                ReferenceSubtractor = (sbyte Value) => (ref sbyte element) => element -= Value,
                 ReferenceMultiplier = (sbyte Scalar) => (ref sbyte element) => element *= Scalar,
                 TwoValueAdder = (ref sbyte Left, ref sbyte Right) => (sbyte)(Left + Right),
                 TwoValueMultiplier = (ref sbyte Left, ref sbyte Right) => (sbyte)(Left * Right),

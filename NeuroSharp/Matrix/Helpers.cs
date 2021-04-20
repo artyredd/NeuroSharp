@@ -3,12 +3,35 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace NeuroSharp
 {
     public static class Helpers
     {
+        private static readonly Random Rng = new();
+        private static readonly SemaphoreSlim Limiter = new(1, 1);
+        private static int[] DoubleRange = { -1, 1 };
+
+        /// <summary>
+        /// Returns a random double between -1d and 1d.
+        /// </summary>
+        /// <returns></returns>
+        public static double NextDouble()
+        {
+            try
+            {
+                Limiter.Wait();
+                int Sign = DoubleRange[Rng.Next(0, 2)];
+                return Sign * Rng.NextDouble();
+            }
+            finally
+            {
+                Limiter.Release();
+            }
+        }
+
         /// <summary>
         /// Determines if the given type and parameters would exceed memory limits.
         /// </summary>

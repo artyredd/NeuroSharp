@@ -160,16 +160,7 @@ namespace NeuroSharp.Byte
             SameTypedOperations = new()
             {
                 ReferenceAdder = (byte Value) => (ref byte element) => element += Value,
-                ReferenceMultiplier = (byte Scalar) => (ref byte element) => element *= Scalar,
-                TwoValueAdder = (ref byte Left, ref byte Right) => (byte)(Left + Right),
-                TwoValueMultiplier = (ref byte Left, ref byte Right) => (byte)(Left * Right),
-                TwoRefenceAdder = (ref byte Left, ref byte Right) => Left += Right,
-                TwoRefenceSubtractor = (ref byte Left, ref byte Right) => Left -= Right,
-                TwoReferenceMultiplier = (ref byte Left, ref byte Right) => Left *= Right,
-            };
-            ByteOperations = new()
-            {
-                ReferenceAdder = (byte Value) => (ref byte element) => element += Value,
+                ReferenceSubtractor = (byte Value) => (ref byte element) => element -= Value,
                 ReferenceMultiplier = (byte Scalar) => (ref byte element) => element *= Scalar,
                 TwoValueAdder = (ref byte Left, ref byte Right) => (byte)(Left + Right),
                 TwoValueMultiplier = (ref byte Left, ref byte Right) => (byte)(Left * Right),
@@ -180,6 +171,7 @@ namespace NeuroSharp.Byte
             SByteOperations = new()
             {
                 ReferenceAdder = (sbyte Value) => (ref byte element) => element += (byte)Value,
+                ReferenceSubtractor = (sbyte Value) => (ref byte element) => element -= (byte)Value,
                 ReferenceMultiplier = (sbyte Scalar) => (ref byte element) => element *= (byte)Scalar,
                 TwoValueAdder = (ref byte Left, ref byte Right) => (byte)(Left + Right),
                 TwoValueMultiplier = (ref byte Left, ref byte Right) => (byte)(Left * Right),

@@ -160,6 +160,7 @@ namespace NeuroSharp.Int
             SameTypedOperations = new()
             {
                 ReferenceAdder = (int Value) => (ref int element) => element += Value,
+                ReferenceSubtractor = (int Value) => (ref int element) => element -= Value,
                 ReferenceMultiplier = (int Scalar) => (ref int element) => element *= Scalar,
                 TwoValueAdder = (ref int Left, ref int Right) => Left + Right,
                 TwoValueMultiplier = (ref int Left, ref int Right) => Left * Right,
@@ -170,6 +171,7 @@ namespace NeuroSharp.Int
             ShortOperations = new()
             {
                 ReferenceAdder = (short Value) => (ref int element) => element += Value,
+                ReferenceSubtractor = (short Value) => (ref int element) => element -= Value,
                 ReferenceMultiplier = (short Scalar) => (ref int element) => element *= Scalar,
                 TwoValueAdder = (ref int Left, ref int Right) => Left + Right,
                 TwoValueMultiplier = (ref int Left, ref int Right) => Left * Right,
@@ -180,6 +182,7 @@ namespace NeuroSharp.Int
             ByteOperations = new()
             {
                 ReferenceAdder = (byte Value) => (ref int element) => element += Value,
+                ReferenceSubtractor = (byte Value) => (ref int element) => element -= Value,
                 ReferenceMultiplier = (byte Scalar) => (ref int element) => element *= Scalar,
                 TwoValueAdder = (ref int Left, ref int Right) => Left + Right,
                 TwoValueMultiplier = (ref int Left, ref int Right) => Left * Right,
@@ -190,6 +193,7 @@ namespace NeuroSharp.Int
             SByteOperations = new()
             {
                 ReferenceAdder = (sbyte Value) => (ref int element) => element += Value,
+                ReferenceSubtractor = (sbyte Value) => (ref int element) => element -= Value,
                 ReferenceMultiplier = (sbyte Scalar) => (ref int element) => element *= Scalar,
                 TwoValueAdder = (ref int Left, ref int Right) => Left + Right,
                 TwoValueMultiplier = (ref int Left, ref int Right) => Left * Right,
