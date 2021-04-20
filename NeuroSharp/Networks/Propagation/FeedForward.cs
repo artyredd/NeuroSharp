@@ -18,7 +18,7 @@ namespace NeuroSharp.Propagation
         /// <param name="Right"></param>
         /// <param name="Activator"></param>
         /// <returns></returns>
-        public IMatrix<T> PropogateForward(INode<T> Node, IMatrix<T> Matrix, IActivationFunction<T> Activator)
+        public IMatrix<T> Forward(INode<T> Node, IMatrix<T> Matrix, IActivationFunction<T> Activator)
         {
             var result = Node.Weights * Matrix;
 
@@ -29,12 +29,21 @@ namespace NeuroSharp.Propagation
             return result;
         }
 
-        public IMatrix<T> Backward(INode<T> Node, IMatrix<T> Matrix, IActivationFunction<T> Activator)
+        public (IMatrix<T> WeightDelta, IMatrix<T> BiasDelta) Backward(IMatrix<T> Output, IMatrix<T> Error, IMatrix<T> PreviousLayerOutput, double TrainingRate, IActivationFunction<T> Activator)
         {
-            _ = Node;
-            _ = Matrix;
-            _ = Activator;
-            return default;
+            IMatrix<T> OutputGradient = MatrixOperations<T>.PerformNonMutableOperation(Output, Activator.Derivative);
+
+            OutputGradient %= Error;
+
+            OutputGradient *= TrainingRate;
+
+            IMatrix<T> BiasDelta = OutputGradient.Duplicate();
+
+            OutputGradient *= PreviousLayerOutput.Transpose();
+
+            IMatrix<T> WeightDelta = OutputGradient;
+
+            return (WeightDelta, BiasDelta);
         }
     }
 }

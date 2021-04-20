@@ -107,38 +107,24 @@ namespace NeuroSharp
                 throw Networks.Exceptions.InconsistentTrainingDataScheme(InputNodes.Weights.Rows, Inputs.Rows);
             }
 
-            IMatrix<double> hidden = Propogator.PropogateForward(InputNodes, Inputs, Activator);
+            IMatrix<double> hidden = Propogator.Forward(InputNodes, Inputs, Activator);
 
-            IMatrix<double> outputs = Propogator.PropogateForward(HiddenNodes[0], hidden, Activator);
+            IMatrix<double> outputs = Propogator.Forward(HiddenNodes[0], hidden, Activator);
 
             // total error for final output
             IMatrix<double> OutputErrors = Expected - outputs;
 
-            IMatrix<double> OutputGradient = MatrixOperations<double>.PerformNonMutableOperation(outputs, Activator.Derivative);
+            var OutputDeltas = Propogator.Backward(outputs, OutputErrors, hidden, TrainingRate, Activator);
 
-            OutputGradient %= OutputErrors;
+            HiddenNodes[0].Biases += OutputDeltas.BiasDelta;
 
-            OutputGradient *= TrainingRate;
+            HiddenNodes[0].Weights += OutputDeltas.WeightDelta;
 
-            HiddenNodes[0].Biases += OutputGradient;
+            var InputDeltas = Propogator.Backward(hidden, HiddenNodes[0].Weights.Transpose() * OutputErrors, Inputs, TrainingRate, Activator);
 
-            OutputGradient *= hidden.Transpose();
+            InputNodes.Biases += InputDeltas.BiasDelta;
 
-            HiddenNodes[0].Weights += OutputGradient;
-
-            IMatrix<double> InputGradient = MatrixOperations<double>.PerformNonMutableOperation(hidden, Activator.Derivative);
-
-            IMatrix<double> HiddenErrors = (HiddenNodes[0].Weights.Transpose() * OutputErrors).Duplicate();
-
-            InputGradient %= HiddenErrors;
-
-            InputGradient *= TrainingRate;
-
-            InputNodes.Biases += InputGradient;
-
-            InputGradient *= Inputs.Transpose();
-
-            InputNodes.Weights += InputGradient;
+            InputNodes.Weights += InputDeltas.WeightDelta;
 
             return default;
         }
@@ -151,11 +137,11 @@ namespace NeuroSharp
 
         public IMatrix<double> CheckInput(IMatrix<double> Inputs)
         {
-            IMatrix<double> propogated = Propogator.PropogateForward(InputNodes, Inputs, Activator);
+            IMatrix<double> propogated = Propogator.Forward(InputNodes, Inputs, Activator);
 
             for (int i = 0; i < HiddenNodes.Length; i++)
             {
-                propogated = Propogator.PropogateForward(HiddenNodes[i], propogated, Activator);
+                propogated = Propogator.Forward(HiddenNodes[i], propogated, Activator);
             }
 
             return propogated;

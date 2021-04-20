@@ -17,11 +17,11 @@
             <DisplayMatrix Matrix=@nn.InputNodes.Weights Title="Input Nodes"></DisplayMatrix>
             <DisplayMatrix Matrix=@nn.HiddenNodes[0].Weights Title="Hidden Nodes[0]"></DisplayMatrix>
             @{
-                IMatrix<double> hidden = nn.Propogator.PropogateForward(nn.InputNodes, TrainingDataAll[0], nn.Activator);
+                IMatrix<double> hidden = nn.Propogator.Forward(nn.InputNodes, TrainingDataAll[0], nn.Activator);
             }
             <DisplayMatrix Matrix=@hidden Title="Hidden"></DisplayMatrix>
             @{
-                IMatrix<double> outputs = nn.Propogator.PropogateForward(nn.HiddenNodes[0], hidden, nn.Activator);
+                IMatrix<double> outputs = nn.Propogator.Forward(nn.HiddenNodes[0], hidden, nn.Activator);
             }
             <DisplayMatrix Matrix=@outputs Title="Outputs"></DisplayMatrix>
             @{
