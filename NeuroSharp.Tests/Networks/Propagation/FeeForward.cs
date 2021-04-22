@@ -23,7 +23,7 @@ namespace NeuroSharp.Tests
             IMatrix<double> weightsStored = inputNode.Weights.Duplicate();
             IMatrix<double> biasesStored = inputNode.Biases.Duplicate();
 
-            IMatrix<double> propogated = Propogator.PropogateForward(inputNode, inputs, Activator);
+            IMatrix<double> propogated = Propogator.Forward(inputNode, inputs, Activator);
 
             // make sure the values have not been mutated
             Assert.Equal(weightsStored, inputNode.Weights);

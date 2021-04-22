@@ -1,0 +1,315 @@
+﻿@using NeuroSharp.NEAT
+
+<div class="flex">
+    <div class="d-flex my-2">
+        <div class="d-inline-flex mx-2">
+            <BECanvas Width=@Width Height=@Height @ref="_canvasReference"></BECanvas>
+        </div>
+        <div class="d-inline-flex flex-column flex-grow-1 mx-2 border border-dark rounded rounded-0">
+            <div class="w-100" style="max-height: 400px; overflow-y: scroll; height: 400px;">
+                <ul class="list-group list-group-flush w-100">
+                    @foreach (var item in console)
+                    {
+                        @((MarkupString)item)
+                    }
+                </ul>
+            </div>
+            <div class="my-2 mx-2" style="max-height: 400px; overflow-y: scroll;">
+                <div class="btn-group" role="group" aria-label="Basic example">
+                    <button type="button" class="btn btn-outline-primary" @onclick=Reset>Reset</button>
+                    <button type="button" class="btn btn-outline-primary" @onclick=AddNode>+ Node</button>
+                    <button type="button" class="btn btn-outline-primary" @onclick=AddConnection>+ Connection</button>
+                </div>
+            </div>
+            <div class="flex my-2 mx-2" style="max-height: 400px; overflow-y: scroll;">
+                @foreach (var item in nn.Innovations)
+                {
+                    <GenoTypeEntry Innovation=@item></GenoTypeEntry>
+                }
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@code {
+    NeatNueralNetwork nn = new(3, 2);
+
+    public int Width = 800;
+    public int Height = 800;
+
+    Random Rng = new();
+
+    private Canvas2DContext _context;
+
+    protected BECanvasComponent _canvasReference;
+
+    const string Black = "rgb(0,0,0)";
+    const string White = "rgb(255,255,255)";
+
+    List<string> console = new();
+
+    System.Diagnostics.Stopwatch watch = new();
+
+    private enum MsgType
+    {
+        none,
+        warning,
+        error,
+        success
+    }
+
+    private void Log(string msg, MsgType msgType = MsgType.none)
+    {
+        switch (msgType)
+        {
+            case MsgType.none:
+                console.Insert(0, $"<li class=\"list-group-item\">{watch.ElapsedMilliseconds} ms:\t{msg}</li>");
+                break;
+            case MsgType.warning:
+                console.Insert(0, $"<li class=\"list-group-item list-group-item-warning\">{watch.ElapsedMilliseconds} ms:\t{msg}</li>");
+                break;
+            case MsgType.error:
+                console.Insert(0, $"<li class=\"list-group-item list-group-item-danger\">{watch.ElapsedMilliseconds} ms:\t{msg}</li>");
+                break;
+            case MsgType.success:
+                console.Insert(0, $"<li class=\"list-group-item list-group-item-success\">{watch.ElapsedMilliseconds} ms:\t{msg}</li>");
+                break;
+        }
+    }
+
+    private async Task Reset()
+    {
+        nn = new(3, 2);
+        await Start();
+        console.Clear();
+    }
+
+    private async Task AddNode()
+    {
+        Log($"Adding Node", MsgType.warning);
+        var result = await nn.AddNode();
+
+        // re draw the UI
+        await Start();
+
+        switch (result)
+        {
+            case AddNodeResult.success:
+                Log($"Added node", MsgType.success);
+                break;
+            case AddNodeResult.error:
+                Log($"Failed to add node: error occurred", MsgType.warning);
+                break;
+            case AddNodeResult.alreadyExists:
+                Log($"Failed to add node: connection already exists", MsgType.warning);
+                break;
+            case AddNodeResult.noEligibleConnections:
+                Log($"Failed to add node: no eligible connections", MsgType.warning);
+                break;
+        }
+    }
+
+    private async Task AddConnection()
+    {
+        Log($"Adding Connection", MsgType.warning);
+        AddConnectionResult result = await nn.AddConnection();
+
+        // re draw the UI
+        await Start();
+
+        switch (result)
+        {
+            case AddConnectionResult.success:
+                Log($"Added Connection", MsgType.success);
+                break;
+            case AddConnectionResult.error:
+                Log($"Failed to add connection: error occurred", MsgType.warning);
+                break;
+            case AddConnectionResult.alreadyExists:
+                Log($"Failed to add connection: connection already exists", MsgType.warning);
+                break;
+            case AddConnectionResult.noEligibleNodes:
+                Log($"Failed to add connection: no eligible nodes", MsgType.warning);
+                break;
+        }
+    }
+
+    private async Task DrawPhenotype(NeatNueralNetwork nn, int x, int y)
+    {
+        if (nn.Nodes.Length is 0)
+        {
+            return;
+        }
+
+        var inputNodes = nn.Nodes.Where(x => x.NodeType == NodeType.Input)?.ToArray() ?? Array.Empty<INeatNode>();
+
+        float nodeSize = 10;
+
+        float distanceBetweenNodes = 50f + nodeSize;
+
+        float lineWidth = 5;
+
+        List<(int node, float x, float y)> nodes = new();
+
+        for (int i = 0; i < inputNodes.Length; i++)
+        {
+            float nodeY = y + (distanceBetweenNodes * i);
+
+            nodes.Add((inputNodes[i].Id, x, nodeY));
+
+            await DrawCircle(x, nodeY, nodeSize, 3, true, Black, White);
+        }
+
+        // get the height of the square of the phenotype so we can center nodes
+        float height = nodes[^1].y - y;
+
+        float outputX = 600f;
+
+        var outputs = nn.Nodes.Where(x => x.NodeType == NodeType.Output).ToArray();
+
+        for (int i = 0; i < outputs.Length; i++)
+        {
+            float nodeY = y + (distanceBetweenNodes * i) + (distanceBetweenNodes / 2 * (inputNodes.Length - outputs.Length));
+
+            nodes.Add((outputs[i].Id, x + outputX, nodeY));
+
+            await DrawCircle(x + outputX, nodeY, nodeSize, 3, true, Black, White);
+        }
+
+        // draw the hidden nodes
+        var hidden = nn.Nodes.Where(x => x.NodeType == NodeType.Hidden).ToArray();
+
+        for (int i = 0; i < hidden.Length; i++)
+        {
+            // this is cancer but man was it quick to implement, im sorry, im so tired
+            bool outputsToHidden = nn.Innovations.Where(x => x.InputNode == hidden[i].Id && nn.Nodes.Where(y => y.Id == x.Id && y.NodeType is NodeType.Hidden).Count() > 0).Count() > 0;
+            bool inputsFromHidden = nn.Innovations.Where(x => x.OutputNode == hidden[i].Id && nn.Nodes.Where(y => y.Id == x.Id && y.NodeType is NodeType.Hidden).Count() > 0).Count() > 0;
+
+            float nodeY = y + (distanceBetweenNodes * i) + (distanceBetweenNodes / 2 * (inputNodes.Length - hidden.Length));
+
+            float nodeX = x;
+
+            if (outputsToHidden)
+            {
+                nodeX += (outputX * 0.33f);
+            }
+            else
+            if (inputsFromHidden)
+            {
+                nodeX += (outputX * 0.66f);
+            }
+            else
+            {
+                nodeX += (outputX / 2);
+            }
+
+            nodes.Add((hidden[i].Id, nodeX, nodeY));
+
+            await DrawCircle(nodeX, nodeY, nodeSize, 3, true, Black, White);
+        }
+
+        // draw the connections
+
+        for (int i = 0; i < nn.Innovations.Length; i++)
+        {
+            if (nn.Innovations[i].Enabled is false)
+            {
+                continue;
+            }
+
+            var left = nodes.Where(x => x.node == nn.Innovations[i].InputNode).FirstOrDefault();
+            var right = nodes.Where(x => x.node == nn.Innovations[i].OutputNode).FirstOrDefault();
+
+            float startX = left.x;
+            float startY = left.y;
+            float endX = right.x;
+            float endY = right.y;
+            await Batch(
+            _context.BeginPathAsync(),
+            _context.SetLineWidthAsync(lineWidth),
+            _context.SetStrokeStyleAsync(Black),
+            _context.MoveToAsync(startX, startY),
+            _context.LineToAsync(endX, endY),
+            _context.StrokeAsync(),
+            _context.ClosePathAsync()
+
+            );
+        }
+    }
+
+    private async Task DrawCircle(float x, float y, float radius, float width, bool filled = false, string StrokeColor = Black, string FillColor = Black)
+    {
+        var tasks = new List<Task> {
+            _context.BeginPathAsync(),
+            _context.SetStrokeStyleAsync(StrokeColor),
+            _context.SetLineWidthAsync(width),
+            _context.ArcAsync(x, y, radius, 0, 2 * Math.PI),
+            _context.StrokeAsync()
+        };
+        if (filled)
+        {
+            tasks.Insert(0, _context.SetFillStyleAsync(FillColor));
+            tasks.Insert(4, _context.FillAsync());
+            tasks.Add(_context.ClosePathAsync());
+        }
+        await Batch(
+            tasks.ToArray()
+        );
+    }
+
+    private async Task Batch(params Task[] awaitables)
+    {
+        await _context.BeginBatchAsync();
+
+        foreach (var item in awaitables)
+        {
+            await item;
+        }
+
+        await _context.EndBatchAsync();
+    }
+
+    private async Task Start()
+    {
+        await _context.BeginBatchAsync();
+
+        await Batch(
+            _context.SetFillStyleAsync("rgb(100, 100, 100)"),
+            _context.FillRectAsync(0, 0, Width, Height)
+        );
+
+        await Batch(
+            _context.BeginPathAsync(),
+            _context.SetStrokeStyleAsync("rgb(0,0,0)"),
+            _context.SetLineWidthAsync(10),
+            _context.SetLineJoinAsync(LineJoin.Round),
+            _context.MoveToAsync(0, 0),
+            _context.LineToAsync(Width, 0),
+            _context.LineToAsync(Width, Height),
+            _context.LineToAsync(0, Height),
+            _context.LineToAsync(0, 0),
+            _context.SetLineCapAsync(LineCap.Round),
+            _context.StrokeAsync()
+        );
+
+        //await DrawCircle(Width / 2, Height / 2, 55, 1, true);
+
+        await DrawPhenotype(nn, Width / 7, Height / 4);
+
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            watch.Start();
+
+            this._context = await this._canvasReference.CreateCanvas2DAsync();
+
+            await Start();
+
+            await InvokeAsync(() => StateHasChanged());
+        }
+    }
+}

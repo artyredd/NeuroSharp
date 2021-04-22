@@ -32,6 +32,33 @@ namespace NeuroSharp
             }
         }
 
+        public static async Task<double> NextDoubleAsync()
+        {
+            try
+            {
+                await Limiter.WaitAsync();
+                int Sign = DoubleRange[Rng.Next(0, 2)];
+                return Sign * Rng.NextDouble();
+            }
+            finally
+            {
+                Limiter.Release();
+            }
+        }
+
+        public static async Task<int> NextAsync(int lower = int.MinValue, int upper = int.MaxValue)
+        {
+            try
+            {
+                await Limiter.WaitAsync();
+                return Rng.Next(lower, upper);
+            }
+            finally
+            {
+                Limiter.Release();
+            }
+        }
+
         /// <summary>
         /// Determines if the given type and parameters would exceed memory limits.
         /// </summary>

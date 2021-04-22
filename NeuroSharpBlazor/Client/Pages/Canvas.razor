@@ -13,67 +13,7 @@
             <BECanvas Width=@Width Height=@Height @ref="_canvasReference"></BECanvas>
         </div>
         <div class="d-inline-flex mx-2">
-            <DisplayMatrix Matrix=@TrainingDataAll[0] Title="Input Data"></DisplayMatrix>
-            <DisplayMatrix Matrix=@nn.InputNodes.Weights Title="Input Nodes"></DisplayMatrix>
-            <DisplayMatrix Matrix=@nn.HiddenNodes[0].Weights Title="Hidden Nodes[0]"></DisplayMatrix>
-            @{
-                IMatrix<double> hidden = nn.Propogator.PropogateForward(nn.InputNodes, TrainingDataAll[0], nn.Activator);
-            }
-            <DisplayMatrix Matrix=@hidden Title="Hidden"></DisplayMatrix>
-            @{
-                IMatrix<double> outputs = nn.Propogator.PropogateForward(nn.HiddenNodes[0], hidden, nn.Activator);
-            }
-            <DisplayMatrix Matrix=@outputs Title="Outputs"></DisplayMatrix>
-            @{
-                // total error for final output
-                IMatrix<double> OutputErrors = new NeuroSharp.Double.Matrix(1, 1, 0) - outputs;
 
-            }
-            <DisplayMatrix Matrix=@OutputErrors Title="Output Errors"></DisplayMatrix>
-            @{
-
-                IMatrix<double> OutputGradient = MatrixOperations<double>.PerformNonMutableOperation(outputs, nn.Activator.Derivative);
-
-            }
-            <DisplayMatrix Matrix=@OutputGradient Title="Output Graident Desigmoid"></DisplayMatrix>
-            @{
-                OutputGradient %= OutputErrors;
-            }
-            <DisplayMatrix Matrix=@OutputGradient Title="Output Graident % Output errors"></DisplayMatrix>
-            @{
-                OutputGradient *= nn.TrainingRate;
-
-            }
-            <DisplayMatrix Matrix=@OutputGradient Title="Output Graident % Training Rate"></DisplayMatrix>
-            @{
-                OutputGradient *= hidden.Transpose();
-            }
-            <DisplayMatrix Matrix=@hidden.Transpose() Title="Hidden Tranposed"></DisplayMatrix>
-            @{
-            }
-            <DisplayMatrix Matrix=@OutputGradient Title="Hidden Deltas"></DisplayMatrix>
-            @{
-                IMatrix<double> InputGradient = MatrixOperations<double>.PerformNonMutableOperation(hidden, nn.Activator.Derivative);
-            }
-            <DisplayMatrix Matrix=@InputGradient Title="Input Graident Desigmoid"></DisplayMatrix>
-            @{
-                IMatrix<double> HiddenErrors = (nn.HiddenNodes[0].Weights.Transpose() * OutputErrors).Duplicate();
-            }
-            <DisplayMatrix Matrix=@HiddenErrors Title="Hidden Erros"></DisplayMatrix>
-            @{
-                InputGradient %= HiddenErrors;
-            }
-            <DisplayMatrix Matrix=@InputGradient Title="Input Gradient % Hidden Errors"></DisplayMatrix>
-            @{
-                InputGradient *= nn.TrainingRate;
-            }
-            <DisplayMatrix Matrix=@InputGradient Title="Input Gradient * Training Rate"></DisplayMatrix>
-            @{
-                InputGradient *= TrainingDataAll[0].Transpose();
-            }
-            <DisplayMatrix Matrix=@InputGradient Title="Input Deltas"></DisplayMatrix>
-            @{
-            }
         </div>
     </div>
     <div class="flex border border-dark rounded rounded-0" style="max-height: 400px; overflow-y: scroll;">
@@ -87,7 +27,7 @@
 </div>
 
 @code {
-    NeuralNetwork nn = new(2, 1, 2);
+    NeuralNetwork nn = new(2, 1, 2, 2);
 
     public int Width = 400;
     public int Height = 400;

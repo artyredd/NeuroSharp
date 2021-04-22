@@ -27,8 +27,8 @@ namespace NeuroSharp.Tests.Networks.Activation
             }
             foreach (var item in vals)
             {
-                Assert.True(item < 1d);
-                Assert.True(item > -1d);
+                Assert.True(item <= 1d);
+                Assert.True(item >= -1d);
             }
         }
     }
