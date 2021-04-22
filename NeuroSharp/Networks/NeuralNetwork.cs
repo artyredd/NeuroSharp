@@ -107,20 +107,50 @@ namespace NeuroSharp
                 throw Networks.Exceptions.InconsistentTrainingDataScheme(InputNodes.Weights.Rows, Inputs.Rows);
             }
 
-            IMatrix<double> hidden = Propogator.Forward(InputNodes, Inputs, Activator);
+            // propogate forward and get the results of each layer since we need them to back propogate
+            IMatrix<double> inputToHidden = Propogator.Forward(InputNodes, Inputs, Activator);
 
-            IMatrix<double> outputs = Propogator.Forward(HiddenNodes[0], hidden, Activator);
+            List<IMatrix<double>> hiddenToHidden = new();
 
-            // total error for final output
+            IMatrix<double> propogated = inputToHidden.Duplicate();
+
+            for (int i = 0; i < HiddenNodes.Length; i++)
+            {
+                // move the values forward through the layers while saving the matrix output of each layer
+                propogated = Propogator.Forward(HiddenNodes[i], propogated, Activator);
+
+                // save the output so we can back propogate later
+                hiddenToHidden.Add(propogated.Duplicate());
+            }
+
+            IMatrix<double> outputs = hiddenToHidden[^1];
+
+            // get the errors of the outputs which should be the last entry in the list of propogated layers
             IMatrix<double> OutputErrors = Expected - outputs;
 
-            var OutputDeltas = Propogator.Backward(outputs, OutputErrors, hidden, TrainingRate, Activator);
+            // go backwards through the saved layers and calculate the deltas and add them to the weights and biases
+            for (int i = HiddenNodes.Length - 1; i >= 0; i--)
+            {
+                var OutputDeltas = default((IMatrix<double> WeightDelta, IMatrix<double> BiasDelta));
 
-            HiddenNodes[0].Biases += OutputDeltas.BiasDelta;
+                if (i - 1 >= 0)
+                {
+                    OutputDeltas = Propogator.Backward(hiddenToHidden[i], i + 1 >= HiddenNodes.Length ? OutputErrors : HiddenNodes[i + 1].Weights.Transpose() * OutputErrors, hiddenToHidden[i - 1], TrainingRate, Activator);
+                }
+                else
+                {
+                    // if this is the first layer instead of using the next layers result we should use the input to hidden
+                    OutputDeltas = Propogator.Backward(hiddenToHidden[i], i + 1 >= HiddenNodes.Length ? OutputErrors : HiddenNodes[i + 1].Weights.Transpose() * OutputErrors, inputToHidden, TrainingRate, Activator);
+                }
 
-            HiddenNodes[0].Weights += OutputDeltas.WeightDelta;
 
-            var InputDeltas = Propogator.Backward(hidden, HiddenNodes[0].Weights.Transpose() * OutputErrors, Inputs, TrainingRate, Activator);
+                HiddenNodes[0].Biases += OutputDeltas.BiasDelta;
+
+                HiddenNodes[0].Weights += OutputDeltas.WeightDelta;
+            }
+
+            // finally calc the deltas for the first layer and modify the weights and biases
+            var InputDeltas = Propogator.Backward(inputToHidden, HiddenNodes[0].Weights.Transpose() * OutputErrors, Inputs, TrainingRate, Activator);
 
             InputNodes.Biases += InputDeltas.BiasDelta;
 

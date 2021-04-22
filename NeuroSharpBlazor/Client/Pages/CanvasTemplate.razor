@@ -1,0 +1,115 @@
+﻿<div class="flex">
+    <div class="btn-group" role="group" aria-label="Basic example">
+        <button type="button" class="btn btn-outline-primary" @onclick=Start>Start</button>
+    </div>
+    <div class="d-flex my-2">
+        <div class="d-inline-flex mx-2">
+            <BECanvas Width=@Width Height=@Height @ref="_canvasReference"></BECanvas>
+        </div>
+        <div class="d-inline-flex mx-2">
+
+        </div>
+    </div>
+    <div class="flex border border-dark rounded rounded-0" style="max-height: 400px; overflow-y: scroll;">
+        <ul class="list-group list-group-flush">
+            @foreach (var item in console)
+            {
+                @((MarkupString)item)
+            }
+        </ul>
+    </div>
+</div>
+
+@code {
+    public int Width = 800;
+    public int Height = 400;
+
+    Random Rng = new();
+
+    private Canvas2DContext _context;
+
+    protected BECanvasComponent _canvasReference;
+
+    List<string> console = new();
+
+    System.Diagnostics.Stopwatch watch = new();
+
+    private enum MsgType
+    {
+        none,
+        warning,
+        error,
+        success
+    }
+
+    private void Log(string msg, MsgType msgType = MsgType.none)
+    {
+        switch (msgType)
+        {
+            case MsgType.none:
+                console.Insert(0, $"<li class=\"list-group-item\">{watch.ElapsedMilliseconds} ms:\t{msg}</li>");
+                break;
+            case MsgType.warning:
+                console.Insert(0, $"<li class=\"list-group-item list-group-item-warning\">{watch.ElapsedMilliseconds} ms:\t{msg}</li>");
+                break;
+            case MsgType.error:
+                console.Insert(0, $"<li class=\"list-group-item list-group-item-danger\">{watch.ElapsedMilliseconds} ms:\t{msg}</li>");
+                break;
+            case MsgType.success:
+                console.Insert(0, $"<li class=\"list-group-item list-group-item-success\">{watch.ElapsedMilliseconds} ms:\t{msg}</li>");
+                break;
+        }
+    }
+
+    private async Task Batch(params Task[] awaitables)
+    {
+        await _context.BeginBatchAsync();
+
+        foreach (var item in awaitables)
+        {
+            await item;
+        }
+
+        await _context.EndBatchAsync();
+    }
+
+    private async Task Start()
+    {
+        await _context.BeginBatchAsync();
+
+        await Batch(
+            _context.SetFillStyleAsync("rgb(100, 100, 100)"),
+            _context.FillRectAsync(0, 0, Width, Height)
+        );
+
+        await Batch(
+            _context.BeginPathAsync(),
+            _context.SetStrokeStyleAsync("rgb(0,0,0)"),
+            _context.SetLineWidthAsync(10),
+            _context.SetLineJoinAsync(LineJoin.Round),
+            _context.MoveToAsync(0, 0),
+            _context.LineToAsync(Width, 0),
+            _context.LineToAsync(Width, Height),
+            _context.LineToAsync(0, Height),
+            _context.LineToAsync(0, 0),
+            _context.SetLineCapAsync(LineCap.Round),
+            _context.StrokeAsync()
+        );
+
+        Log("Started Application", MsgType.success);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            watch.Start();
+
+            this._context = await this._canvasReference.CreateCanvas2DAsync();
+
+            await Start();
+
+            await InvokeAsync(() => StateHasChanged());
+        }
+    }
+}
