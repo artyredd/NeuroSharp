@@ -30,8 +30,4 @@
 	  <ProjectReference Include="..\NeuroSharp\NeuroSharp.csproj" />
 	</ItemGroup>
 
-	<ItemGroup>
-	  <Folder Include="NEAT\Intef\" />
-	</ItemGroup>
-
 </Project>

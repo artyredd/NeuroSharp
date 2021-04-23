@@ -9,27 +9,13 @@ using System.Threading.Tasks;
 [assembly: InternalsVisibleTo("NeuroSharp.Tests")]
 namespace NeuroSharp.NEAT
 {
-    public class NeatNueralNetwork
+    public class NeatNueralNetwork : INeatNetwork
     {
-        /// <summary>
-        /// The index of the next innovation
-        /// </summary>
-        internal static volatile int CurrentGlobalInnovationIndex = 0;
-
-        /// <summary>
-        /// The actual storage location for innovations
-        /// </summary>
-        internal static IInnovation[] GlobalInnovations = Array.Empty<IInnovation>();
-
-        /// <summary>
-        /// a O(n) lookup for the index of an innovation by its hash
-        /// </summary>
-        internal static readonly Dictionary<string, int> GlobalInnovationHashes = new();
-
-        internal static readonly SemaphoreSlim InnovationSemaphore = new(1, 1);
-
         public NeatNueralNetwork(ushort InputNodes, ushort OutputNodes)
         {
+            Inputs = InputNodes;
+            Outputs = OutputNodes;
+
             Nodes = new INeatNode[InputNodes + OutputNodes];
 
             NextNodeNumber = 0;
@@ -55,83 +41,108 @@ namespace NeuroSharp.NEAT
             }
         }
 
-        private volatile int NextNodeNumber = 0;
+        public static IInnovationHandler GlobalInnovations { get; } = new InnovationHandler();
 
-        // a list would be more convenient but this is ~5x faster
-        internal INeatNode[] _Nodes = Array.Empty<INeatNode>();
+        /// <summary>
+        /// Gets the <see cref="IMutater"/> that provides functionality to how this NEAT mutates during runtime.
+        /// </summary>
+        public IMutater Mutater { get; init; } = new DefaultMutater();
 
+        /// <summary>
+        /// Gets the <see cref="IEvaluator"/> that should propogate values through this NEAT network and evaluate the output from this NEAT network. This is different from a <see cref="NeuroSharp.Propagation.IPropogator{T}"/>. NEAT Networks use <see cref="IEvaluator"/>s instead.
+        /// </summary>
+        public IEvaluator Evaluator { get; init; } = new DefaultEvaluator();
+
+        /// <summary>
+        /// The nodes that this network has evolved or started with.
+        /// <code>
+        /// Order of elements:
+        /// </code>
+        /// Nodes:
+        /// [ <c>input nodes</c>  ... | <c>output nodes</c> ... | <c>hidden nodes</c> ... ]
+        /// </summary>
         public INeatNode[] Nodes
         {
             get { return _Nodes; }
             set { _Nodes = value; }
         }
 
+        internal Dictionary<ushort, int> NodeIndexDictionary = new();
+
+        internal SemaphoreSlim NodeIndexSemaphore = new(1, 1);
+
         internal IInnovation[] _Innovations = Array.Empty<Innovation>();
 
+        /// <summary>
+        /// The innovations that this network has evolved
+        /// </summary>
         public IInnovation[] Innovations
         {
             get { return _Innovations; }
             set { _Innovations = value; }
         }
 
+        /// <summary>
+        /// The number of input nodes this network was created with
+        /// </summary>
+        public int Inputs { get; private set; } = 0;
+
+        /// <summary>
+        /// The number of ouput nodes this network was created with
+        /// </summary>
+        public int Outputs { get; private set; } = 0;
+
+        // a list would be more convenient but this is ~5x faster
+        internal INeatNode[] _Nodes = Array.Empty<INeatNode>();
+
+        internal volatile int NextNodeNumber = 0;
+
+        internal volatile bool Dirty = true;
+
+        public bool TopologyChanged => Dirty;
 
         /// <summary>
         /// The hashes of all the innovations that this network currently has in its genome
         /// </summary>
-        internal readonly HashSet<string> InnovationHashes = new();
+        public HashSet<string> InnovationHashes { get; init; } = new();
 
-        /// <summary>
-        /// Adds the given <see cref="IInnovation"/> to the global innovations dictionary.
-        /// </summary>
-        /// <param name="innovation"></param>
-        /// <returns>
-        /// <see langword="true"/> when the <see cref="IInnovation"/> was successfully added to the global dict.
-        /// <para>
-        /// <see langword="false"/> when the innovation already exists in the dictionary.
-        /// </para>
-        /// </returns>
-        public static async Task<int> AddInnovation(IInnovation innovation)
+        public bool TryGetIndex(ushort NodeId, out int index)
         {
-            // get the hash of the inn so we can see if it's already in the global list
-            string hash = innovation.Hash();
-
-            await InnovationSemaphore.WaitAsync();
-
+            NodeIndexSemaphore.Wait();
             try
             {
-                // check to see if the hash exists in the dict
-                if (GlobalInnovationHashes.ContainsKey(hash) is false)
+                if (NodeIndexDictionary.ContainsKey(NodeId))
                 {
-                    int innovationNumber = System.Threading.Interlocked.Increment(ref CurrentGlobalInnovationIndex);
-
-                    Array.Resize(ref GlobalInnovations, innovationNumber);
-
-                    // add the actual innovation to the global list
-                    GlobalInnovations[innovationNumber - 1] = innovation;
-
-                    // create a O(1) lookup for the index of that innovation
-                    GlobalInnovationHashes.Add(hash, innovationNumber);
-
-                    return innovationNumber;
+                    index = NodeIndexDictionary[NodeId];
+                    return true;
                 }
-                else
-                {
-                    // since the hash is in the dict return the index of it's innovation number
-                    return GlobalInnovationHashes[hash];
-                }
+                index = default;
+                return false;
             }
             finally
             {
-                InnovationSemaphore.Release();
+                NodeIndexSemaphore.Release();
             }
         }
 
         /// <summary>
         /// Creates the actual arrays from the genome that are used to evaluate the network and perform mutations
+        /// <code>
+        /// Complexity: Innovations = O(2n)  Nodes = O(n)
+        /// </code>
         /// </summary>
         /// <returns></returns>
         public void GeneratePhenotype()
         {
+            // avoid unecessary and very performance costly genotype generation
+            if (Dirty is false)
+            {
+                return;
+            }
+
+            // mark ourselfs as having regenerated our structure
+            Dirty = false;
+
             // this method should read the genome and fill the arrays for the nodes
             Dictionary<ushort, IInnovation[]> Inputs = new();
             Dictionary<ushort, IInnovation[]> Outputs = new();
@@ -181,9 +192,22 @@ namespace NeuroSharp.NEAT
             // create a contigous block of memory to store the nodes for faster access
             Span<INeatNode> nodes = new(Nodes);
 
+            NodeIndexSemaphore.Wait();
+            NodeIndexDictionary.Clear();
+            NodeIndexSemaphore.Release();
+
             // iterate through the nodes and create the arrays that contain the connections using the dictionaries we just built
-            foreach (var node in nodes)
+            for (int i = 0; i < nodes.Length; i++)
             {
+                var node = nodes[i];
+
+                NodeIndexSemaphore.Wait();
+                if (NodeIndexDictionary.ContainsKey(node.Id) is false)
+                {
+                    NodeIndexDictionary.Add(node.Id, i);
+                }
+                NodeIndexSemaphore.Release();
+
                 // this is for the input nodes, they do NOT input from anywhere, their inputs are the provided inputs for an evaluation, dont waste the time searching a dict if we dont have to
 
                 // check to see if we need to create an array for input nodes
@@ -191,6 +215,13 @@ namespace NeuroSharp.NEAT
                 if (node.NodeType != NodeType.Output && Inputs.ContainsKey(node.Id))
                 {
                     Span<IInnovation> inputs = new(Inputs[node.Id]);
+
+                    // assign the indexs for the innovations so we can propogate later on
+
+                    foreach (var item in inputs)
+                    {
+                        item.InputNodeIndex = (ushort)i;
+                    }
 
                     node.OutputNodes = new IInnovation[inputs.Length];
 
@@ -210,6 +241,12 @@ namespace NeuroSharp.NEAT
 
                     node.InputNodes = new IInnovation[outputs.Length];
 
+                    // make sure we assign the indexes so nodes can find eachother later on
+                    foreach (var item in outputs)
+                    {
+                        item.OutputNodeIndex = (ushort)i;
+                    }
+
                     Span<IInnovation> nodeSpan = new(node.InputNodes);
 
                     outputs.CopyTo(nodeSpan);
@@ -217,269 +254,69 @@ namespace NeuroSharp.NEAT
             }
         }
 
-        public async Task Mutate()
+        public ushort IncrementNodeCount() => (ushort)Interlocked.Increment(ref NextNodeNumber);
+        public ushort DecrementNodeCount() => (ushort)Interlocked.Decrement(ref NextNodeNumber);
+
+        /// <summary>
+        /// Evaluates the provided data using the <see cref="Evaluator"/> and returns the results
+        /// <code>
+        /// Complexit: O(??) probably O(n²)
+        /// </code>
+        /// <code>
+        /// ! Recursive !
+        /// </code>
+        /// </summary>
+        /// <param name="Data"></param>
+        /// <returns></returns>
+        public double[] Evaluate(double[] Data)
         {
-            /*  when we mutate we can only do the following:
-                Add Node
-                Add Connection Between Nodes
-                Disable Connection Between Nodes
-
-            */
-
-            // add a node
-            // we can only add hidden nodes, since our inputs and outputs are pre-determined by the end-user
-            // add a node to our genome
-
-        }
-
-        public async Task<AddConnectionResult> AddConnection()
-        {
-            // add a connection between two nodes that did not previously exist
-
-            INeatNode[] EligibleInputNodes;
-            INeatNode[] EligibleOutputNodes;
-
-            (EligibleInputNodes, EligibleOutputNodes) = GetEligibleNodesForNewConnection();
-
-            async Task<INeatNode> GetInputNode() => EligibleInputNodes[await Helpers.NextAsync(0, EligibleInputNodes.Length)];
-            async Task<INeatNode> GetOutputNode() => EligibleOutputNodes[await Helpers.NextAsync(0, EligibleOutputNodes.Length)];
-
-            var inputNode = await GetInputNode();
-            var outputNode = await GetOutputNode();
-
-            // make sure we didn't select the same input and output node(only possible with hidden nodes)
-            // i tried to test for this but i couldn't be bother to spend more than 20 minutes on it, at least if it does show it its covered, else its just a single bool check, not to big of a deal on performance
-            if (inputNode.Id == outputNode.Id)
+            if (Data?.Length is null or 0 || Data.Length != Inputs)
             {
-                // check to see if that was the only node available
-                int maxRetries = 10;
-                do
-                {
-                    maxRetries--;
-
-                    inputNode = await GetInputNode();
-                    outputNode = await GetOutputNode();
-
-                    if (maxRetries <= 0)
-                    {
-                        return AddConnectionResult.noEligibleNodes;
-                    }
-                } while (inputNode.Id == outputNode.Id);
+                throw Networks.Exceptions.InconsistentTrainingDataScheme(Inputs, Data.Length);
             }
 
-            // create the innovation and get it's hash to see if that innovation is already in our genome
-            var newInnovation = new Innovation()
+            // make sure out structure has not changed
+            if (Dirty)
             {
-                Enabled = true,
-                InputNode = inputNode.Id,
-                OutputNode = outputNode.Id,
-                Weight = await Helpers.NextDoubleAsync()
-            };
 
-            // make sure the innovation is not already in our list if its not add it
-            if (InnovationHashes.Add(newInnovation.Hash()) is false)
-            {
-                // since it's already int the list instead of mutating give up 
-                return AddConnectionResult.alreadyExists;
+                GeneratePhenotype();
             }
 
-            await AddLocalAndGlobalInnovation(newInnovation);
+            // this is by default a recursive function, may need a refactor for performance reasons (if there are any)
 
-            return AddConnectionResult.success;
-        }
-
-        public async Task<AddNodeResult> AddNode()
-        {
-            // chose two random nodes to connect
-            // the input can either be an input or a hidden
-            // and the output can either be another hidden or an output
-
-            // make sure we can split a connection, if there are none, return and give up
-            if (Innovations.Length is 0)
-            {
-                return AddNodeResult.noEligibleConnections;
-            }
-
-            // make sure there is a connection that we can split
-
-
-
-            IInnovation[] eligibleConnections;
-
-            if (TryGetEligibleConnectionToSplit(out eligibleConnections) is false)
-            {
-                return AddNodeResult.noEligibleConnections;
-            }
-
-            // get a random eligible connection
-            IInnovation connectionToSplit = eligibleConnections[await Helpers.NextAsync(0, eligibleConnections.Length)];
-
-            // create the new node
-            INeatNode newNode = new Node()
-            {
-                Id = (ushort)Interlocked.Increment(ref NextNodeNumber),
-                NodeType = NodeType.Hidden
-            };
-
-            // create the connection between the input and the new node
-            // input --> new node --> output
-            IInnovation inputConnection = new Innovation()
-            {
-                InputNode = connectionToSplit.InputNode,
-                OutputNode = newNode.Id,
-                Enabled = true,
-                Weight = 1.0d
-            };
-
-            // create the connection between the new node and the output
-            // input --> new node --> output
-            IInnovation outputConnecion = new Innovation()
-            {
-                InputNode = newNode.Id,
-                OutputNode = connectionToSplit.OutputNode,
-                Enabled = true,
-                Weight = connectionToSplit.Weight
-            };
-
-            // make sure the innovation isn't already in our innovations
-            if (InnovationHashes.Contains(inputConnection.Hash()) || InnovationHashes.Contains(outputConnecion.Hash()))
-            {
-                // make sure we decrement the node counter that we incremented earlier when creating the node before we could check to see if this innovation was already made
-                Interlocked.Decrement(ref NextNodeNumber);
-
-                return AddNodeResult.alreadyExists;
-            }
-
-            // check to see if there is a connection that bypasses the new node disable is
-            // ex: input -------------> output <- should be disabled since it's being replaced with input -> new node -> output
-            foreach (var item in Innovations)
-            {
-                // we should avoid using full equality comparison here since this is faster and the Ids should be global innovation numbers and therefor unique
-                if (item.Id == connectionToSplit.Id)
-                {
-                    // if the node that we are using as an input it connected the the node we are using as an output, we should disable that connection since it will bypass our new node
-                    item.Enabled = false;
-
-                    // since there should only be one break and continue
-                    break;
-                }
-            }
-
-            // since the 
-
-            // try to get the innovation id for the innovation and store it
-            await AddLocalAndGlobalInnovation(inputConnection);
-            await AddLocalAndGlobalInnovation(outputConnecion);
-
-            InnovationHashes.Add(inputConnection.Hash());
-            InnovationHashes.Add(outputConnecion.Hash());
-
-            // add the node
-            AddNodeToGenome(newNode);
-
-            return AddNodeResult.success;
+            return Evaluator.Evaluate(Data, this);
         }
 
         /// <summary>
-        /// Adds the given node to this local instances genome, automatically resizes the array and inserts it to the last index;
+        /// Resizes the node array and adds the given node to the end of the array.
         /// </summary>
         /// <param name="node"></param>
-        internal void AddNodeToGenome(INeatNode node)
+        public void AddNode(INeatNode node)
         {
             Array.Resize(ref _Nodes, _Nodes.Length + 1);
 
             Nodes[^1] = node;
+
+            Dirty = true;
         }
 
-        internal async Task<bool> AddLocalAndGlobalInnovation(IInnovation innovation)
+        /// <summary>
+        /// Gets an id from the <see cref="GlobalInnovations"/>, sets the provided's <see cref="IInnovation.Id"/>, resizes the <see cref="Nodes"/> array, and sets the last element to the <paramref name="innovation"/>
+        /// </summary>
+        /// <param name="innovation"></param>
+        /// <returns></returns>
+        public async Task AddInnovation(IInnovation innovation)
         {
             // set the innovation id of the new innovation, if the new gene is unique we will get a new number from the static method, if it already exists we will get its existing innovation number
             // also add it to the global genome
-            innovation.Id = await AddInnovation(innovation);
+            innovation.Id = await GlobalInnovations.Add(innovation);
 
             // resize the backing array for the innovations to accomodate the new innovation
             Array.Resize(ref _Innovations, _Innovations.Length + 1);
 
             Innovations[^1] = innovation;
 
-            return true;
-        }
-
-
-        internal bool TryGetEligibleConnectionToSplit(out IInnovation[] eligibleInnovations)
-        {
-            /*
-                an eligible connection has the following characteristics:
-                
-                - enabled
-                - a valid input node
-                - a valid output node
-            */
-            if (Innovations.Length is 0)
-            {
-                eligibleInnovations = Array.Empty<Innovation>();
-                return false;
-            }
-
-            HashSet<IInnovation> eligibleInns = new();
-
-            Span<IInnovation> innovations = new(Innovations);
-
-            foreach (var item in innovations)
-            {
-                if (item.Enabled)
-                {
-                    eligibleInns.Add(item);
-                }
-            }
-
-            if (eligibleInns.Count is 0)
-            {
-                eligibleInnovations = Array.Empty<Innovation>();
-                return false;
-            }
-
-            eligibleInnovations = eligibleInns.ToArray();
-            return true;
-        }
-
-        internal (INeatNode[] EligibleInputNodes, INeatNode[] EligibleOutputNodes) GetEligibleNodesForNewConnection()
-        {
-            // we should only connect two nodes if the following rules are met:
-            /*
-                the input node is not an output node:
-                    output nodes are the final result and are pre-determined we shouldn't add more arbitrarily
-
-                the output node is not an input node:
-                    input nodes are what accepts incoming data, we should not create feedback loops by feeding results into them except the initial training data
-
-                neither node is the same node:
-                    we shouldnt create a connection between a node and itself
-            */
-
-            HashSet<INeatNode> EligibleInputNodes = new();
-            HashSet<INeatNode> EligibleOutputNodes = new();
-
-            Span<INeatNode> nodes = new(Nodes);
-
-            foreach (var item in nodes)
-            {
-                switch (item.NodeType)
-                {
-                    case NodeType.Input:
-                        EligibleInputNodes.Add(item);
-                        break;
-                    case NodeType.Hidden:
-                        EligibleInputNodes.Add(item);
-                        EligibleOutputNodes.Add(item);
-                        break;
-                    case NodeType.Output:
-                        EligibleOutputNodes.Add(item);
-                        break;
-                }
-            }
-
-            return (EligibleInputNodes.ToArray(), EligibleOutputNodes.ToArray());
+            Dirty = true;
         }
     }
 }

@@ -15,9 +15,12 @@ namespace NeuroSharp.NEAT
         public IInnovation[] OutputNodes { get; set; }
 
         public IInnovation[] InputNodes { get; set; }
+        public double? Value { get; set; } = null;
 
         // we can avoid constantly hashing the object if we store the hash once
-        protected string _Hash = null;
+        internal string _Hash = null;
+
+        public static INeatHasher Hasher { get; set; } = new DefaultHasher();
 
         public string Hash()
         {
@@ -26,20 +29,7 @@ namespace NeuroSharp.NEAT
                 return _Hash;
             }
 
-            // this explicitly generates a hash that encodes this innvotation excluding the weight
-            byte[] EncodedBytes = new byte[4];
-
-            Span<byte> EncodedSpan = new(EncodedBytes);
-
-            Span<byte> inputNode = BitConverter.GetBytes(Id);
-
-            Span<byte> outputNode = BitConverter.GetBytes((ushort)NodeType);
-
-            inputNode.CopyTo(EncodedSpan.Slice(0, 2));
-
-            outputNode.CopyTo(EncodedSpan.Slice(2, 2));
-
-            _Hash = Convert.ToHexString(EncodedSpan);
+            _Hash = Hasher.Hash(this);
 
             return _Hash;
         }
