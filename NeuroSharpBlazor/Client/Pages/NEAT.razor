@@ -88,7 +88,7 @@
     private async Task AddNode()
     {
         Log($"Adding Node", MsgType.warning);
-        var result = await nn.AddNode();
+        var result = await ((DefaultMutater)nn.Mutater).AddNode(nn);
 
         // re draw the UI
         await Start();
@@ -113,7 +113,7 @@
     private async Task AddConnection()
     {
         Log($"Adding Connection", MsgType.warning);
-        AddConnectionResult result = await nn.AddConnection();
+        AddConnectionResult result = await ((DefaultMutater)nn.Mutater).AddConnection(nn);
 
         // re draw the UI
         await Start();
@@ -131,6 +131,9 @@
                 break;
             case AddConnectionResult.noEligibleNodes:
                 Log($"Failed to add connection: no eligible nodes", MsgType.warning);
+                break;
+            case AddConnectionResult.circularConnection:
+                Log($"Failed to add connection: avoided circular connection", MsgType.warning);
                 break;
         }
     }
@@ -158,7 +161,9 @@
 
             nodes.Add((inputNodes[i].Id, x, nodeY));
 
-            await DrawCircle(x, nodeY, nodeSize, 3, true, Black, White);
+            //await DrawCircle(x, nodeY, nodeSize, 3, true, Black, White);
+
+            await DrawNode(x, nodeY, inputNodes[i]);
         }
 
         // get the height of the square of the phenotype so we can center nodes
@@ -174,7 +179,9 @@
 
             nodes.Add((outputs[i].Id, x + outputX, nodeY));
 
-            await DrawCircle(x + outputX, nodeY, nodeSize, 3, true, Black, White);
+            //await DrawCircle(x + outputX, nodeY, nodeSize, 3, true, Black, White);
+
+            await DrawNode(x + outputX, nodeY, outputs[i]);
         }
 
         // draw the hidden nodes
@@ -206,7 +213,9 @@
 
             nodes.Add((hidden[i].Id, nodeX, nodeY));
 
-            await DrawCircle(nodeX, nodeY, nodeSize, 3, true, Black, White);
+            //await DrawCircle(nodeX, nodeY, nodeSize, 3, true, Black, White);
+
+            await DrawNode(nodeX, nodeY, hidden[i]);
         }
 
         // draw the connections
@@ -221,21 +230,43 @@
             var left = nodes.Where(x => x.node == nn.Innovations[i].InputNode).FirstOrDefault();
             var right = nodes.Where(x => x.node == nn.Innovations[i].OutputNode).FirstOrDefault();
 
-            float startX = left.x;
+            float startX = left.x * 1.1f;
             float startY = left.y;
-            float endX = right.x;
+            float endX = right.x * 0.95f;
             float endY = right.y;
-            await Batch(
-            _context.BeginPathAsync(),
-            _context.SetLineWidthAsync(lineWidth),
-            _context.SetStrokeStyleAsync(Black),
-            _context.MoveToAsync(startX, startY),
-            _context.LineToAsync(endX, endY),
-            _context.StrokeAsync(),
-            _context.ClosePathAsync()
 
-            );
+            await DrawArrow(startX, startY, endX, endY, Black, lineWidth / 2);
         }
+    }
+
+    private async Task DrawArrow(float x, float y, float targetX, float targetY, string Color = Black, float lineWidth = 2f)
+    {
+        var headlen = 10; // length of head in pixels
+        var dx = targetX - x;
+        var dy = targetY - y;
+        var angle = Math.Atan2(dy, dx);
+        await Batch(
+            _context.SetStrokeStyleAsync(Color),
+            _context.SetLineWidthAsync(lineWidth),
+            _context.MoveToAsync(x, y),
+            _context.QuadraticCurveToAsync(targetX - 50, (targetY + y) / 2, targetX, targetY),
+            _context.StrokeAsync(),
+            _context.MoveToAsync(targetX, targetY),
+            _context.LineToAsync(targetX - headlen * Math.Cos(angle - Math.PI / 6), targetY - headlen * Math.Sin(angle - Math.PI / 6)),
+            _context.MoveToAsync(targetX, targetY),
+            _context.LineToAsync(targetX - headlen * Math.Cos(angle + Math.PI / 6), targetY - headlen * Math.Sin(angle + Math.PI / 6)),
+            _context.StrokeAsync()
+        );
+    }
+
+    private async Task DrawNode(float x, float y, INeatNode node)
+    {
+        float nodeSize = 10;
+        float textPosition = y + (nodeSize * 2);
+
+        await DrawCircle(x, y, nodeSize, 3, true, Black, White);
+
+        await DrawText(x, textPosition, $"{node.Id}\n{node.NodeType}");
     }
 
     private async Task DrawCircle(float x, float y, float radius, float width, bool filled = false, string StrokeColor = Black, string FillColor = Black)
@@ -255,6 +286,14 @@
         }
         await Batch(
             tasks.ToArray()
+        );
+    }
+
+    private async Task DrawText(float x, float y, string text = "Example Text", float size = 10, string Color = Black, float maxWidth = 50)
+    {
+        await Batch(
+            _context.SetFontAsync($"{size}px sans-serif"),
+            _context.FillTextAsync(text, x, y, maxWidth)
         );
     }
 

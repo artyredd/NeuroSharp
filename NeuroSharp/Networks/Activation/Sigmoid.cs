@@ -16,7 +16,8 @@ namespace NeuroSharp.Activation
 
         public double Function(ref double Value)
         {
-            return 1d / (1d + Math.Pow(Math.E, -Value));
+            Value = 1d / (1d + Math.Pow(Math.E, -Value));
+            return Value;
         }
     }
 }

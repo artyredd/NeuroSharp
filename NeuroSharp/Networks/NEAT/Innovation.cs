@@ -34,6 +34,18 @@ namespace NeuroSharp.NEAT
         /// </summary>
         public double Weight { get; set; }
 
+        /// <summary>
+        /// The index of the input node, since the input node array is not index based and is FIFO
+        /// </summary>
+        public ushort InputNodeIndex { get; set; }
+
+        /// <summary>
+        /// The index of the ouput node, since the input node array is not index based and is FIFO
+        /// </summary>
+        public ushort OutputNodeIndex { get; set; }
+
+        public static INeatHasher Hasher { get; set; } = new DefaultHasher();
+
         public bool Equals(Innovation x, Innovation y)
         {
             return x?.InputNode == y?.InputNode && x?.OutputNode == y?.OutputNode && x?.Enabled == y?.Enabled && x?.Weight == y?.Weight;
@@ -44,22 +56,6 @@ namespace NeuroSharp.NEAT
             return obj.GetHashCode();
         }
 
-        public string Hash()
-        {
-            // this explicitly generates a hash that encodes this innvotation excluding the weight
-            byte[] EncodedBytes = new byte[8];
-
-            Span<byte> EncodedSpan = new(EncodedBytes);
-
-            Span<byte> inputNode = BitConverter.GetBytes(InputNode);
-
-            Span<byte> outputNode = BitConverter.GetBytes(OutputNode);
-
-            inputNode.CopyTo(EncodedSpan.Slice(0, 4));
-
-            outputNode.CopyTo(EncodedSpan.Slice(2, 4));
-
-            return Convert.ToHexString(EncodedSpan);
-        }
+        public string Hash() => Hasher.Hash(this);
     }
 }

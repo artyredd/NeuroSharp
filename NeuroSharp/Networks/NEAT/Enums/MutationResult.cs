@@ -4,14 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NeuroSharp.NEAT
+namespace NeuroSharp
 {
-    public enum AddConnectionResult
+    public enum MutationResult
     {
         success,
-        alreadyExists,
-        noEligibleNodes,
         error,
-        circularConnection
+        noValidMutations
     }
 }
