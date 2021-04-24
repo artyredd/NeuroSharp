@@ -8,7 +8,7 @@ using NeuroSharp.Bench;
 using System;
 
 
-BenchmarkRunner.Run(typeof(GotoVsWhile),
+BenchmarkRunner.Run(typeof(BitShiftVsMultiply),
     DefaultConfig.Instance.AddDiagnoser(MemoryDiagnoser.Default)
     );
 //BenchmarkRunner.Run(typeof(HashCodevsCustomHash), DefaultConfig.Instance.AddDiagnoser(MemoryDiagnoser.Default));
