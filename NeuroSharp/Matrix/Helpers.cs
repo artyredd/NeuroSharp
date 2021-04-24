@@ -32,6 +32,19 @@ namespace NeuroSharp
             }
         }
 
+        public static async Task<double> NextUDoubleAsync()
+        {
+            try
+            {
+                await Limiter.WaitAsync();
+                return Rng.NextDouble();
+            }
+            finally
+            {
+                Limiter.Release();
+            }
+        }
+
         public static async Task<double> NextDoubleAsync()
         {
             try

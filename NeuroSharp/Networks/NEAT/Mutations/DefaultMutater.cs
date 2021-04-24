@@ -11,9 +11,39 @@ namespace NeuroSharp.NEAT
 {
     public class DefaultMutater : IMutater
     {
+        public double AddConnectionChance { get; set; } = 0.05d;
+
+        public double AddNodeChance { get; set; } = 0.024d;
+
         public async Task<MutationResult> Mutate(INeatNetwork network)
         {
-            _ = network;
+            double val = await Helpers.NextUDoubleAsync();
+
+            if (val <= AddNodeChance && val >= AddConnectionChance)
+            {
+                var status = await AddNode(network);
+                return status switch
+                {
+                    AddNodeResult.success => MutationResult.success,
+                    AddNodeResult.error => MutationResult.error,
+                    AddNodeResult.noEligibleConnections => MutationResult.noValidMutations,
+                    AddNodeResult.alreadyExists => MutationResult.noValidMutations,
+                    _ => MutationResult.error,
+                };
+            }
+            else if (val <= AddConnectionChance && val <= AddNodeChance)
+            {
+                var status = await AddConnection(network);
+                return status switch
+                {
+                    AddConnectionResult.success => MutationResult.success,
+                    AddConnectionResult.error => MutationResult.error,
+                    AddConnectionResult.noEligibleNodes => MutationResult.noValidMutations,
+                    AddConnectionResult.alreadyExists => MutationResult.noValidMutations,
+                    _ => MutationResult.error,
+                };
+            }
+
             return MutationResult.success;
         }
 
