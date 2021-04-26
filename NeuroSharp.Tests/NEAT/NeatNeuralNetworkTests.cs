@@ -238,39 +238,130 @@ namespace NeuroSharp.Tests
         [Fact]
         public void GeneratePhenotype()
         {
-            var nn = new NeatNueralNetwork(1, 1);
+            var nn = CreateExampleNetwork();
 
-            // create a connection between 0 and 1
-            Assert.Equal(AddConnectionResult.success, ((DefaultMutater)nn.Mutater).AddConnection(nn).Result);
-
-            // make sure the node ids were set correctly
-            Assert.Equal(0, nn.Nodes[0].Id);
-            Assert.Equal(1, nn.Nodes[1].Id);
-
-            // make sure the connection was made correctly
-            Assert.Equal(0, nn.Innovations[0].InputNode);
-            Assert.Equal(1, nn.Innovations[0].OutputNode);
-
-            // set weight to unlikely number
-            nn.Innovations[0].Weight = 0.666652d;
+            // manually create the exmaple from(but 0 indexed instead becuase i like it better)
+            // https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.28.5457&rep=rep1&type=pdf page 11
 
             nn.GeneratePhenotype();
 
-            // this innovation is a connection:
-            // 0 --> 1
-            // 0's output nodes should be this innovation and 1's input nodes should be this innovation
-            Assert.Contains(nn.Innovations[0], nn.Nodes[0].OutputNodes);
+            nn = CreateAlternateExample();
 
-            // manully add another connection to test that dict lookups and array reszing works
-            nn.AddInnovation(new Innovation
+            nn.GeneratePhenotype();
+
+        }
+
+        INeatNetwork CreateExampleNetwork()
+        {
+            // this is a duplicate test that tests disjoint as the other does not
+            // create two neurual networks manually to ensure consistent results
+            NeatNueralNetwork left = new(3, 1);
+            left.Innovations = new IInnovation[] {
+                new Innovation(){
+                    Id = 1,
+                    InputNode = 0,
+                    OutputNode = 4,
+                    Enabled = true,
+                    Weight = 1
+                },
+                new Innovation(){
+                    Id = 2,
+                    InputNode = 1,
+                    OutputNode = 4,
+                    Enabled = true,
+                    Weight = 1
+                },
+                new Innovation(){
+                    Id = 4,
+                    InputNode = 1,
+                    OutputNode = 3,
+                    Enabled = false,
+                    Weight = 1
+                },
+                new Innovation(){
+                    Id = 5,
+                    InputNode = 2,
+                    OutputNode = 3,
+                    Enabled = true,
+                    Weight = 1
+                },
+                new Innovation(){
+                    Id = 6,
+                    InputNode = 4,
+                    OutputNode = 3,
+                    Enabled = true,
+                    Weight = 1
+                },
+            };
+            // we use hashes to verify genes make sure to hash them
+            foreach (var item in left.Innovations)
             {
-                Enabled = true,
-                Id = 1,
-                InputNode = 0,
-                OutputNode = 1
-            }).Wait();
+                left.InnovationHashes.Add(item.Hash());
+            }
+            return left;
+        }
 
-            nn.GeneratePhenotype();
+        INeatNetwork CreateAlternateExample()
+        {
+            NeatNueralNetwork right = new(3, 1);
+            right.Innovations = new IInnovation[] {
+                new Innovation(){
+                    Id = 1,
+                    InputNode = 0,
+                    OutputNode = 4,
+                    Enabled = false,
+                    Weight = 1
+                },
+                new Innovation(){
+                    Id = 2,
+                    InputNode = 1,
+                    OutputNode = 4,
+                    Enabled = true,
+                    Weight = 1
+                },
+                new Innovation(){
+                    Id = 3,
+                    InputNode = 2,
+                    OutputNode = 4,
+                    Enabled = true,
+                    Weight = 1
+                },
+                new Innovation(){
+                    Id = 4,
+                    InputNode = 1,
+                    OutputNode = 3,
+                    Enabled = false,
+                    Weight = 1
+                },
+                new Innovation(){
+                    Id = 6,
+                    InputNode = 4,
+                    OutputNode = 3,
+                    Enabled = true,
+                    Weight = 1
+                },
+                new Innovation(){
+                    Id = 7,
+                    InputNode = 0,
+                    OutputNode = 5,
+                    Enabled = true,
+                    Weight = 1
+                },
+                new Innovation(){
+                    Id = 8,
+                    InputNode = 5,
+                    OutputNode = 4,
+                    Enabled = true,
+                    Weight = 1
+                },
+            };
+
+            // we use hashes to verify genes make sure to hash them
+            foreach (var item in right.Innovations)
+            {
+                right.InnovationHashes.Add(item.Hash());
+            }
+            return right;
         }
     }
 }

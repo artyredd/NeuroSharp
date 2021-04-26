@@ -7,11 +7,17 @@ using System.Threading.Tasks;
 
 namespace NeuroSharp.NEAT
 {
-    public class DefaultEvaluator : IEvaluator
+    public class DefaultEvaluator : IEvaluator<double, double[], double>
     {
         public IActivationFunction<double> Activator { get; set; } = new Sigmoid();
 
-        public IFitnessFunction<double> FitnessFunction { get; set; }
+        public IFitnessFunction<double[], double> FitnessFunction { get; set; } = new DefaultFitnessFunction();
+
+        public double EvaluateWithFitness(double[] Inputs, INeatNetwork network)
+        {
+            double[] eval = Evaluate(Inputs, network);
+            return FitnessFunction.CheckFitness(eval);
+        }
 
         public double[] Evaluate(double[] Inputs, INeatNetwork network)
         {
@@ -22,8 +28,8 @@ namespace NeuroSharp.NEAT
             Span<INeatNode> nodes = new(network.Nodes);
 
             // slice the pertinent nodes into two types.
-            Span<INeatNode> inputNodes = nodes.Slice(0, network.Inputs);
-            Span<INeatNode> outputNodes = nodes.Slice(network.Inputs, network.Outputs);
+            Span<INeatNode> inputNodes = nodes.Slice(0, network.InputNodeCount);
+            Span<INeatNode> outputNodes = nodes.Slice(network.InputNodeCount, network.OutputNodeCount);
 
             // load the values into the input nodes
             for (int i = 0; i < inputNodes.Length; i++)
@@ -45,7 +51,7 @@ namespace NeuroSharp.NEAT
             return result;
         }
 
-        private double EvaluateNode(INeatNode node, INeatNetwork network)
+        internal double EvaluateNode(INeatNode node, INeatNetwork network)
         {
             // recursively get the value of the node
 

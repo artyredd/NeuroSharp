@@ -1,10 +1,18 @@
 ﻿namespace NeuroSharp.NEAT
 {
-    public interface IEvaluator
+    /// <summary>
+    /// Defines the object responsible for evaluating inputs using a given network and determining the organisms fitness
+    /// </summary>
+    /// <typeparam name="T">The value type that the inputs are in, and the weights are in.</typeparam>
+    /// <typeparam name="U">The type of result the evaluator returns after using the inputs</typeparam>
+    /// <typeparam name="V">The type of result the evaluator returns after using the inputs and running them through the fitness function</typeparam>
+    public interface IEvaluator<T, U, V>
     {
-        IActivationFunction<double> Activator { get; set; }
-        IFitnessFunction<double> FitnessFunction { get; set; }
+        IActivationFunction<T> Activator { get; set; }
+        IFitnessFunction<U, T> FitnessFunction { get; set; }
 
-        double[] Evaluate(double[] Inputs, INeatNetwork network);
+        U Evaluate(T[] Inputs, INeatNetwork network);
+
+        V EvaluateWithFitness(T[] Inputs, INeatNetwork network);
     }
 }

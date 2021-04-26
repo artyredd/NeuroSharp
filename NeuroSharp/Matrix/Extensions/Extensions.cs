@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace NeuroSharp
@@ -40,7 +41,7 @@ namespace NeuroSharp
 
             for (int i = 0; i < matrix.Rows; i++)
             {
-                Array.Copy(matrix[i], 0, megaArray, i * matrix.Columns, matrix.Columns);
+                System.Array.Copy(matrix[i], 0, megaArray, i * matrix.Columns, matrix.Columns);
             }
 
             return megaArray;
@@ -171,6 +172,85 @@ namespace NeuroSharp
                 }
             }
             return true;
+        }
+
+        /// <summary>
+        /// Searches the dictionary for the <paramref name="key"/>, if it does not exists it creates a new <see cref="{T}[]"/> with the <paramref name="value"/> as the first entry. If the <paramref name="key"/> is found, the array is resized and the <paramref name="value"/> is added as the last element in the array.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="dict"></param>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <param name="Limiter"></param>
+        /// <returns></returns>
+        public static Task AddValueToArray<T>(this IDictionary<T, T[]> dict, T key, T value) => AddValueToArray(dict, key, value, null);
+
+        /// <summary>
+        /// Searches the dictionary for the <paramref name="key"/>, if it does not exists it creates a new <see cref="{T}[]"/> with the <paramref name="value"/> as the first entry. If the <paramref name="key"/> is found, the array is resized and the <paramref name="value"/> is added as the last element in the array.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="dict"></param>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <param name="Limiter"></param>
+        /// <returns></returns>
+        public static async Task AddValueToArray<T>(this IDictionary<T, T[]> dict, T key, T value, SemaphoreSlim Limiter)
+        {
+            if (Limiter is not null)
+            {
+                await Limiter.WaitAsync();
+            }
+            try
+            {
+                if (dict.ContainsKey(key))
+                {
+                    var arr = dict[key];
+
+                    // i could probably remove this check since it doesnt make sense for a node to have more than one connection to the same node
+                    if (arr.Contains(value) is false)
+                    {
+                        dict[key] = Array.ResizeAndAdd(arr, value);
+                    }
+                }
+                else
+                {
+                    dict.Add(key, new T[] { value });
+                }
+            }
+            finally
+            {
+                Limiter?.Release();
+            }
+        }
+
+        public static class Array
+        {
+            /// <summary>
+            /// Resizes the <paramref name="array"/> then sets the last element to the <paramref name="value"/>
+            /// </summary>
+            /// <typeparam name="T"></typeparam>
+            /// <param name="array"></param>
+            /// <param name="value"></param>
+            /// <returns></returns>
+            public static T[] ResizeAndAdd<T>(T[] array, T value) => ResizeAndAdd(ref array, value);
+
+            /// <summary>
+            /// Resizes the <paramref name="array"/> then sets the last element to the <paramref name="value"/>
+            /// </summary>
+            /// <typeparam name="T"></typeparam>
+            /// <param name="array"></param>
+            /// <param name="value"></param>
+            /// <returns></returns>
+            public static T[] ResizeAndAdd<T>(ref T[] array, T value)
+            {
+                int newIndex = array.Length;
+
+                System.Array.Resize(ref array, newIndex + 1);
+
+                array[newIndex] = value;
+
+                return array;
+            }
         }
     }
 }
