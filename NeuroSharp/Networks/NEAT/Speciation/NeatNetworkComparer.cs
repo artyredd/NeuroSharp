@@ -9,8 +9,48 @@ using System.Threading.Tasks;
 [assembly: InternalsVisibleTo("NeuroSharp.Tests")]
 namespace NeuroSharp.NEAT
 {
-    public class NeatNetworkComparer
+    public class NeatNetworkComparer : INeatNetworkComparer
     {
+        public double ExcessCoefficient { get; set; } = 1.0d;
+        public double DisjointCoefficient { get; set; } = 1.0d;
+        public double WeightCoefficient { get; set; } = 1.0d;
+
+        /// <summary>
+        /// Calculates the compatibility of the left, when compared to the right.
+        /// </summary>
+        /// <param name="left"></param>
+        /// <param name="right"></param>
+        /// <returns></returns>
+        public double CalculateCompatibility(INeatNetwork left, INeatNetwork right)
+        {
+            var comparedGenome = AlignGenomes(left, right);
+
+            // https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.28.5457&rep=rep1&type=pdf page 11
+
+            // The number of excess and disjoint genes between a pair of genomes is a natural measure of their com-patibility distance.  The more disjoint two genomes are, theless evolutionary history they share, and thusthe less compatible they are. Therefore, we can measure the compatibility distanceÆof different structuresin NEAT as a simple linear combination of the number of excess(E) and disjoint (D) genes, as well as theaverage weight differences of matching genes (W), including disabled genes. The coefficients, ExcessCoefficient, DisjointCoefficient, and WeightCoefficient, allow us to adjust the importance of the three factors, and the factor N, the number of genes in the larger genome, normalizes for genome size
+
+            int N = left.Innovations.Length >= right.Innovations.Length ? left.Innovations.Length : right.Innovations.Length;
+
+            double excess = ExcessCoefficient * comparedGenome.Excess.Length;
+
+            double disjoint = DisjointCoefficient * (comparedGenome.LeftDisjoint.Length + comparedGenome.RightDisjoint.Length);
+
+            double averageWeight = AverageWeightDifference(comparedGenome.Aligned);
+
+            excess /= N;
+
+            disjoint /= N;
+
+            return excess + disjoint + (WeightCoefficient * averageWeight);
+        }
+
+        /// <summary>
+        /// Crosses two parents to derive a new genome for a new child <see cref="INeatNetwork"/>
+        /// </summary>
+        /// <param name="left"></param>
+        /// <param name="right"></param>
+        /// <param name="fitnessState"></param>
+        /// <returns></returns>
         public IInnovation[] DeriveGenome(INeatNetwork left, INeatNetwork right, FitnessState fitnessState)
         {
             // align the genomes so we can select and create a new genome
@@ -131,6 +171,37 @@ namespace NeuroSharp.NEAT
             return result;
         }
 
+        /// <summary>
+        /// Calculates the weight differences between the two provided genome.
+        /// </summary>
+        /// <param name="Genomes"></param>
+        /// <returns></returns>
+        internal double AverageWeightDifference(Span<IInnovation> AlignedGenomes)
+        {
+            double averageDifference = 0.0d;
+
+            // array scheme is left right left right left right, always even
+            for (int i = 0; i < AlignedGenomes.Length - 2; i += 2)
+            {
+                averageDifference += AlignedGenomes[i + 1].Weight - AlignedGenomes[i].Weight;
+            }
+
+            return averageDifference / (AlignedGenomes.Length >> 1);
+        }
+
+        /// <summary>
+        /// Calculates the weight differences between the two provided genome.
+        /// </summary>
+        /// <param name="Genomes"></param>
+        /// <returns></returns>
+        internal double AverageWeightDifference(IInnovation[] AlignedGenomes) => AverageWeightDifference(new Span<IInnovation>(AlignedGenomes));
+
+        /// <summary>
+        /// Aligns two genomes together so they can be compared and used to derive another genome
+        /// </summary>
+        /// <param name="left"></param>
+        /// <param name="right"></param>
+        /// <returns></returns>
         internal (IInnovation[] Aligned, IInnovation[] Excess, IInnovation[] LeftDisjoint, IInnovation[] RightDisjoint) AlignGenomes(INeatNetwork left, INeatNetwork right)
         {
             IInnovation[] Aligned = Array.Empty<IInnovation>();

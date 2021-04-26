@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NeuroSharp.NEAT;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -20,6 +21,19 @@ namespace NeuroSharp.Networks
         public static Exception InconsistentTrainingDataScheme(int Expected, int Actual)
         {
             return new ArgumentException($"Unexpected training data scheme provided. Expected ({Expected}) items but was only provided ({Actual}) items. Privided training data must match the number of input and/or output nodes.");
+        }
+
+        /// <summary>
+        /// Returns exception:
+        /// <code>
+        /// Circular innovation Id(12) From(3) -> To(1). Innovations can not input from nodes above them in the network or output to nodes that are below them in the network.
+        /// </code>
+        /// </summary>
+        /// <param name="innovation"></param>
+        /// <returns></returns>
+        public static Exception CircularInnovationReference(IInnovation innovation)
+        {
+            return new StackOverflowException($"Circular innovation Id({innovation?.Id}) From({innovation?.InputNode}) -> To({innovation?.OutputNode}). Innovations can not input from nodes above them in the network or output to nodes that are below them in the network.");
         }
     }
 }

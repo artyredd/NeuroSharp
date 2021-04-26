@@ -11,9 +11,11 @@ namespace NeuroSharp.NEAT
 {
     public class DefaultMutater : IMutater
     {
+        public double MutateWeightChance { get; set; } = 0.125d;
+
         public double AddConnectionChance { get; set; } = 0.05d;
 
-        public double AddNodeChance { get; set; } = 0.024d;
+        public double AddNodeChance { get; set; } = 0.025d;
 
         public async Task<MutationResult> Mutate(INeatNetwork network)
         {
@@ -42,6 +44,29 @@ namespace NeuroSharp.NEAT
                     AddConnectionResult.alreadyExists => MutationResult.noValidMutations,
                     _ => MutationResult.error,
                 };
+            }
+
+
+            // mutate weights
+            await MutateWeights(network);
+
+            return MutationResult.success;
+        }
+
+        public async Task<MutationResult> MutateWeights(INeatNetwork network)
+        {
+            if (network?.Innovations?.Length is null or 0)
+            {
+                return MutationResult.noValidMutations;
+            }
+
+            for (int i = 0; i < network.Innovations.Length; i++)
+            {
+                double val = await Helpers.NextUDoubleAsync();
+                if (val <= AddNodeChance)
+                {
+                    network.Innovations[i].Weight += await Helpers.NextDoubleAsync();
+                }
             }
 
             return MutationResult.success;
