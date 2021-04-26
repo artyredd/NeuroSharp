@@ -20,6 +20,9 @@ namespace NeuroSharp.NEAT
         // > 1 Hidden node layers
         readonly Dictionary<int, int> LayerDict = new();
 
+        // keep track of which nodes need further computation to figure out their exact layer, so we can avoid unessesary complexity
+        private int[] hiddenNodes = Array.Empty<int>();
+
         void AddRecipientToSender(int node, int recipient) => Senders.AddValueToArray(node, recipient);
 
         void AddSenderToRecipient(int node, int sender) => Recipients.AddValueToArray(node, sender);
@@ -34,13 +37,14 @@ namespace NeuroSharp.NEAT
             LayerDict[node] = layer;
         }
 
-        int GetAndSetHiddenLayer(int hiddenNodeId)
+        int GetAndSetHiddenLayer(int hiddenNodeId, INeatNetwork network)
         {
             // first check to see if we have already calculated the layer
             if (LayerDict.ContainsKey(hiddenNodeId))
             {
                 return LayerDict[hiddenNodeId];
             }
+
             // rules for finding the exact layer for the node
             /*
                 if all of the nodes it receives from are input nodes, it's layer is 2 (1 above the input layer)
@@ -86,7 +90,7 @@ namespace NeuroSharp.NEAT
                 {
                     // if we werent able to find the node in the dict we should recursively check to see if all their children are inputs, and if they are
                     // our layer would be 1 above theirs(or the highest child in our tree)
-                    int val = GetAndSetHiddenLayer(id);
+                    int val = GetAndSetHiddenLayer(id, network);
 
                     // check to see if they are taller than all the rest of our children
                     if (val > HighestLayerOfChildren)
@@ -109,6 +113,33 @@ namespace NeuroSharp.NEAT
             return HighestLayerOfChildren;
         }
 
+        NodeType GetAndStoreNodeType(int nodeId, INeatNetwork network)
+        {
+            if (nodeId < (network.InputNodeCount + network.OutputNodeCount))
+            {
+                // check to see if it's an output node
+                // node array scheme is always input, output, hidden ...
+                // layer scheme is 0= outputm 1 = input 1+ hidden
+                if (nodeId >= network.InputNodeCount)
+                {
+                    // must be output node
+                    SetLayer(nodeId, 0);
+                    return NodeType.Output;
+                }
+                else
+                {
+                    // must be input node
+                    SetLayer(nodeId, 1);
+                    return NodeType.Input;
+                }
+            }
+
+            // add to the hiddenNodes array so we can figure out it's actual layer later
+            Extensions.Array.ResizeAndAdd(ref hiddenNodes, nodeId);
+
+            return NodeType.Hidden;
+        }
+
         public IMatrix<T>[] Generate(INeatNetwork network)
         {
             // we should generate the phenotype from innovations alone
@@ -121,45 +152,14 @@ namespace NeuroSharp.NEAT
                       Weight
                      ENABLED
 
+            using the above information we should be able to explictly represent the network
+
             */
 
             // clear the old phenotype stuff out
             Senders.Clear();
             Recipients.Clear();
             LayerDict.Clear();
-
-
-            // the value the id of a node must be less than to be either an input or output node
-            int mustBeInputOrOutputThreashold = network.InputNodeCount + network.OutputNodeCount;
-
-            // keep track of which nodes need further computation to figure out their exact layer, so we can avoid unessesary complexity
-            int[] hiddenNodes = Array.Empty<int>();
-            NodeType GetAndStoreNodeType(int nodeId)
-            {
-                if (nodeId < mustBeInputOrOutputThreashold)
-                {
-                    // check to see if it's an output node
-                    // node array scheme is always input, output, hidden ...
-                    // layer scheme is 0= outputm 1 = input 1+ hidden
-                    if (nodeId >= network.InputNodeCount)
-                    {
-                        // must be output node
-                        SetLayer(nodeId, 0);
-                        return NodeType.Output;
-                    }
-                    else
-                    {
-                        // must be input node
-                        SetLayer(nodeId, 1);
-                        return NodeType.Input;
-                    }
-                }
-
-                // add to the hiddenNodes array so we can figure out it's actual layer later
-                Extensions.Array.ResizeAndAdd(ref hiddenNodes, nodeId);
-
-                return NodeType.Hidden;
-            }
 
             // iterate through the innovations list and record where every node sends to and every node receives from
             Span<IInnovation> innovations = new(network.Innovations);
@@ -182,8 +182,8 @@ namespace NeuroSharp.NEAT
                 AddSenderToRecipient(inn.OutputNode, inn.InputNode);
 
                 // determine if the node is an input, output, or hidden node, store that value
-                GetAndStoreNodeType(inn.InputNode);
-                GetAndStoreNodeType(inn.OutputNode);
+                GetAndStoreNodeType(inn.InputNode, network);
+                GetAndStoreNodeType(inn.OutputNode, network);
             }
 
             // O(i * n)
@@ -191,7 +191,7 @@ namespace NeuroSharp.NEAT
             Span<int> hiddenSpan = new(hiddenNodes);
             for (int i = 0; i < hiddenSpan.Length; i++)
             {
-                GetAndSetHiddenLayer(hiddenSpan[i]);
+                GetAndSetHiddenLayer(hiddenSpan[i], network);
             }
 
             // now that we have what our input nodes, output nodes, and hidden nodes are and their exact location we can construct the matrix to represent the data
