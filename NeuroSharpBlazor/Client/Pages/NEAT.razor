@@ -5,38 +5,37 @@
         <div class="d-inline-flex mx-2">
             <BECanvas Width=@Width Height=@Height @ref="_canvasReference"></BECanvas>
         </div>
-        <div class="d-inline-flex flex-column flex-grow-1 mx-2 border border-dark rounded rounded-0">
-            <div class="w-100" style="max-height: 400px; overflow-y: scroll; height: 400px;">
-                <ul class="list-group list-group-flush w-100">
-                    @foreach (var item in console)
-                    {
-                        @((MarkupString)item)
-                    }
-                </ul>
-            </div>
-            <div class="my-2 mx-2" style="max-height: 400px; overflow-y: scroll;">
-                <div class="btn-group" role="group" aria-label="Basic example">
-                    <button type="button" class="btn btn-outline-primary" @onclick=Reset>Reset</button>
-                    <button type="button" class="btn btn-outline-primary" @onclick=AddNode>+ Node</button>
-                    <button type="button" class="btn btn-outline-primary" @onclick=AddConnection>+ Connection</button>
-                </div>
-            </div>
-            <div class="flex my-2 mx-2" style="max-height: 400px; overflow-y: scroll;">
-                @foreach (var item in nn.Innovations)
-                {
-                    <GenoTypeEntry Innovation=@item></GenoTypeEntry>
-                }
+    </div>
+    <div class="d-inline-flex flex flex-grow-1 mx-2 border border-dark rounded rounded-0 w-100">
+        <div class="my-2 mx-2" style="max-height: 400px; overflow-y: scroll;  min-width: 282px; overflow-x: hidden;">
+            <div class="btn-group" role="group" aria-label="Basic example">
+                <button type="button" class="btn btn-outline-primary" @onclick=Reset>Reset</button>
+                <button type="button" class="btn btn-outline-primary" @onclick=AddNode>+ Node</button>
+                <button type="button" class="btn btn-outline-primary" @onclick=AddConnection>+ Connection</button>
             </div>
         </div>
-
+        <div class="w-25" style="max-height: 400px; overflow-y: scroll; height: 400px;">
+            <ul class="list-group list-group-flush w-100">
+                @foreach (var item in console)
+                {
+                    @((MarkupString)item)
+                }
+            </ul>
+        </div>
+        <div class="flex my-2 mx-2" style="max-height: 400px; overflow-y: scroll;">
+            @foreach (var item in nn.Innovations)
+            {
+                <GenoTypeEntry Innovation=@item></GenoTypeEntry>
+            }
+        </div>
     </div>
 </div>
 
 @code {
     NeatNueralNetwork nn = new(3, 2);
 
-    public int Width = 800;
-    public int Height = 800;
+    public int Width = 1600;
+    public int Height = 450;
 
     Random Rng = new();
 
@@ -145,7 +144,14 @@
             return;
         }
 
-        var inputNodes = nn.Nodes.Where(x => x.NodeType == NodeType.Input)?.ToArray() ?? Array.Empty<INeatNode>();
+        int[][] layers = await nn.PhenotypeGenerator.GetLayers(nn);
+
+        if (layers.Length is 0)
+        {
+            return;
+        }
+
+        var inputNodes = layers[1];
 
         float nodeSize = 10;
 
@@ -153,69 +159,45 @@
 
         float lineWidth = 5;
 
-        List<(int node, float x, float y)> nodes = new();
+        List<(int node, float x, float y, NodeType type)> nodes = new();
 
         for (int i = 0; i < inputNodes.Length; i++)
         {
             float nodeY = y + (distanceBetweenNodes * i);
 
-            nodes.Add((inputNodes[i].Id, x, nodeY));
-
-            //await DrawCircle(x, nodeY, nodeSize, 3, true, Black, White);
-
-            await DrawNode(x, nodeY, inputNodes[i]);
+            nodes.Add((inputNodes[i], x, nodeY, NodeType.Input));
         }
 
         // get the height of the square of the phenotype so we can center nodes
         float height = nodes[^1].y - y;
 
-        float outputX = 600f;
+        float outputX = x + ((layers.Length) * distanceBetweenNodes);
 
-        var outputs = nn.Nodes.Where(x => x.NodeType == NodeType.Output).ToArray();
+        var outputs = layers[0];
 
         for (int i = 0; i < outputs.Length; i++)
         {
             float nodeY = y + (distanceBetweenNodes * i) + (distanceBetweenNodes / 2 * (inputNodes.Length - outputs.Length));
 
-            nodes.Add((outputs[i].Id, x + outputX, nodeY));
-
-            //await DrawCircle(x + outputX, nodeY, nodeSize, 3, true, Black, White);
-
-            await DrawNode(x + outputX, nodeY, outputs[i]);
+            nodes.Add((outputs[i], x + outputX, nodeY, NodeType.Output));
         }
 
+        int previousLayerCount = inputNodes.Length;
+
         // draw the hidden nodes
-        var hidden = nn.Nodes.Where(x => x.NodeType == NodeType.Hidden).ToArray();
-
-        for (int i = 0; i < hidden.Length; i++)
+        for (int layer = 2; layer < layers.Length; layer++)
         {
-            // this is cancer but man was it quick to implement, im sorry, im so tired
-            bool outputsToHidden = nn.Innovations.Where(x => x.InputNode == hidden[i].Id && nn.Nodes.Where(y => y.Id == x.Id && y.NodeType is NodeType.Hidden).Count() > 0).Count() > 0;
-            bool inputsFromHidden = nn.Innovations.Where(x => x.OutputNode == hidden[i].Id && nn.Nodes.Where(y => y.Id == x.Id && y.NodeType is NodeType.Hidden).Count() > 0).Count() > 0;
-
-            float nodeY = y + (distanceBetweenNodes * i) + (distanceBetweenNodes / 2 * (inputNodes.Length - hidden.Length));
-
-            float nodeX = x;
-
-            if (outputsToHidden)
+            for (int nodeIdex = 0; nodeIdex < layers[layer].Length; nodeIdex++)
             {
-                nodeX += (outputX * 0.33f);
-            }
-            else
-            if (inputsFromHidden)
-            {
-                nodeX += (outputX * 0.66f);
-            }
-            else
-            {
-                nodeX += (outputX / 2);
-            }
+                int node = layers[layer][nodeIdex];
 
-            nodes.Add((hidden[i].Id, nodeX, nodeY));
+                float nodeY = y + (distanceBetweenNodes * nodeIdex) + (distanceBetweenNodes / 2 * (previousLayerCount - layers[layer].Length));
 
-            //await DrawCircle(nodeX, nodeY, nodeSize, 3, true, Black, White);
+                float nodeX = x + (layer * distanceBetweenNodes);
 
-            await DrawNode(nodeX, nodeY, hidden[i]);
+                nodes.Add((node, nodeX, nodeY, NodeType.Hidden));
+            }
+            previousLayerCount = layers[layer].Length;
         }
 
         // draw the connections
@@ -230,12 +212,17 @@
             var left = nodes.Where(x => x.node == nn.Innovations[i].InputNode).FirstOrDefault();
             var right = nodes.Where(x => x.node == nn.Innovations[i].OutputNode).FirstOrDefault();
 
-            float startX = left.x * 1.1f;
+            float startX = left.x * 1.05f;
             float startY = left.y;
             float endX = right.x * 0.95f;
             float endY = right.y;
 
             await DrawArrow(startX, startY, endX, endY, Black, lineWidth / 2);
+        }
+
+        foreach (var item in nodes)
+        {
+            await DrawNode(item.x, item.y, item.node, item.type);
         }
     }
 
@@ -259,14 +246,14 @@
         );
     }
 
-    private async Task DrawNode(float x, float y, INeatNode node)
+    private async Task DrawNode(float x, float y, int id, NodeType node)
     {
         float nodeSize = 10;
         float textPosition = y + (nodeSize * 2);
 
         await DrawCircle(x, y, nodeSize, 3, true, Black, White);
 
-        await DrawText(x, textPosition, $"{node.Id}\n{node.NodeType}");
+        await DrawText(x, textPosition, $"{id}\n{node}");
     }
 
     private async Task DrawCircle(float x, float y, float radius, float width, bool filled = false, string StrokeColor = Black, string FillColor = Black)
@@ -334,7 +321,7 @@
 
         //await DrawCircle(Width / 2, Height / 2, 55, 1, true);
 
-        await DrawPhenotype(nn, Width / 7, Height / 4);
+        await DrawPhenotype(nn, Width / 8, Height / 4);
 
     }
 

@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <Folder Include="Networks\Fitness\" />
+    <Folder Include="Networks\NEAT\Phenotype Expression\Interfaces\" />
   </ItemGroup>
 
 </Project>

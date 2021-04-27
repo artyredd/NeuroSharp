@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,7 +19,7 @@ namespace NeuroSharp.NEAT
         // 0 = output layer
         // 1 = input layer
         // > 1 Hidden node layers
-        readonly Dictionary<int, int> LayerDict = new();
+        readonly ReversableConcurrentDictionary<int, int> LayerDict = new();
 
         // keep track of which nodes need further computation to figure out their exact layer, so we can avoid unessesary complexity
         private int[] hiddenNodes = Array.Empty<int>();
@@ -27,22 +28,14 @@ namespace NeuroSharp.NEAT
 
         void AddSenderToRecipient(int node, int sender) => Recipients.AddValueToArray(node, sender);
 
-        void SetLayer(int node, int layer)
-        {
-            if (LayerDict.ContainsKey(node) is false)
-            {
-                LayerDict.Add(node, layer);
-                return;
-            }
-            LayerDict[node] = layer;
-        }
+        async Task SetLayer(int node, int layer) => await LayerDict.Add(node, layer);
 
-        int GetAndSetHiddenLayer(int hiddenNodeId, INeatNetwork network)
+        async Task<int> GetAndSetHiddenLayer(int hiddenNodeId, INeatNetwork network)
         {
             // first check to see if we have already calculated the layer
-            if (LayerDict.ContainsKey(hiddenNodeId))
+            if (await LayerDict.ContainsKey(hiddenNodeId))
             {
-                return LayerDict[hiddenNodeId];
+                return await LayerDict.Get(hiddenNodeId);
             }
 
             // rules for finding the exact layer for the node
@@ -53,29 +46,28 @@ namespace NeuroSharp.NEAT
                     -> if child doesn't have an entry, recurse until a all nodes received from are input nodes
             */
 
-            // i could do a check to make sure the key exists, but it SHOULD exist by now, and if it doesn't it should throw an error because something is wrong
-            Span<int> nodesReceivedFrom = new(Recipients[hiddenNodeId]);
-
             // this represents what layer all of the children are in, when this is layer 2(1 above input layer) the the highest layer is 1 and our layer is that + 1
             // when any of our children are hidden we should get their height in the network recursively as well and record their height here. We will always be +1 to our highest child in the network
             int HighestLayerOfChildren = 1;
 
             // iterate through all fo the nodes that provide to this node and check if they are all input nodes
-            for (int i = 0; i < nodesReceivedFrom.Length; i++)
+            for (int i = 0; i < Recipients[hiddenNodeId].Length; i++)
             {
-                ref int id = ref nodesReceivedFrom[i];
+                int id = Recipients[hiddenNodeId][i];
 
                 // check to see if we have already found the layer of the child node
-                if (LayerDict.ContainsKey(id))
+                if (await LayerDict.ContainsKey(id))
                 {
                     // if the layer dict contains the key it means the id is either a input or an output node, or a hidden node that has already recursively found it's layer, make sure its not 0, since that would be an output node and that would be a circular reference and break everything
-                    if (LayerDict[id] >= 1)
+                    int val = await LayerDict.Get(id);
+
+                    if (val >= 1)
                     {
                         // since this is a hidden node we should make sure we keep track of it's height since our height will be the highest child + 1
-                        if (LayerDict[id] > HighestLayerOfChildren)
+                        if (val > HighestLayerOfChildren)
                         {
                             // since it's larger set our largest child to that + 1
-                            HighestLayerOfChildren = LayerDict[id];
+                            HighestLayerOfChildren = val;
                         }
                     }
                     else
@@ -90,7 +82,7 @@ namespace NeuroSharp.NEAT
                 {
                     // if we werent able to find the node in the dict we should recursively check to see if all their children are inputs, and if they are
                     // our layer would be 1 above theirs(or the highest child in our tree)
-                    int val = GetAndSetHiddenLayer(id, network);
+                    int val = await GetAndSetHiddenLayer(id, network);
 
                     // check to see if they are taller than all the rest of our children
                     if (val > HighestLayerOfChildren)
@@ -107,13 +99,13 @@ namespace NeuroSharp.NEAT
 
             HighestLayerOfChildren += 1;
 
-            SetLayer(hiddenNodeId, HighestLayerOfChildren);
+            await SetLayer(hiddenNodeId, HighestLayerOfChildren);
 
             // return so we recurse properly
             return HighestLayerOfChildren;
         }
 
-        NodeType GetAndStoreNodeType(int nodeId, INeatNetwork network)
+        async Task<NodeType> GetAndStoreNodeType(int nodeId, INeatNetwork network)
         {
             if (nodeId < (network.InputNodeCount + network.OutputNodeCount))
             {
@@ -123,13 +115,13 @@ namespace NeuroSharp.NEAT
                 if (nodeId >= network.InputNodeCount)
                 {
                     // must be output node
-                    SetLayer(nodeId, 0);
+                    await SetLayer(nodeId, 0);
                     return NodeType.Output;
                 }
                 else
                 {
                     // must be input node
-                    SetLayer(nodeId, 1);
+                    await SetLayer(nodeId, 1);
                     return NodeType.Input;
                 }
             }
@@ -140,7 +132,68 @@ namespace NeuroSharp.NEAT
             return NodeType.Hidden;
         }
 
-        public IMatrix<T>[] Generate(INeatNetwork network)
+
+        /// <summary>
+        /// Compiles the layers found using <see cref="GenerateMatrices(INeatNetwork)"/> into a multi dimensional array where each index is an individual layer of nodes.
+        /// <code>
+        /// [0] is the output layer
+        /// </code>
+        /// <code>
+        /// [1] is the input layer
+        /// </code>
+        /// <code>
+        /// [n] is the nth layer
+        /// </code>
+        /// </summary>
+        /// <returns></returns>
+        public async Task<int[][]> GetLayers(INeatNetwork network) => await GetLayers(await DecodeGenome(network));
+
+        /// <summary>
+        /// Compiles the layers found using <see cref="GenerateMatrices(INeatNetwork)"/> into a multi dimensional array where each index is an individual layer of nodes.
+        /// <code>
+        /// [0] is the output layer
+        /// </code>
+        /// <code>
+        /// [1] is the input layer
+        /// </code>
+        /// <code>
+        /// [n] is the nth layer
+        /// </code>
+        /// </summary>
+        /// <returns></returns>
+        public async Task<int[][]> GetLayers(ReversableConcurrentDictionary<int, int> DecodedGenotype)
+        {
+            // reverse the dict
+            IDictionary<int, int[]> reversed = await DecodedGenotype.ReverseAsync();
+
+            int[][] ConvertToMutliDimensionalArray(IDictionary<int, int[]> dict)
+            {
+                int[][] layers = new int[dict.Count][];
+
+                Span<int[]> result = new(layers);
+                foreach (var item in dict)
+                {
+                    result[item.Key % result.Length] = item.Value;
+                }
+                return result.ToArray();
+            }
+
+            return ConvertToMutliDimensionalArray(reversed);
+        }
+
+        /// <summary>
+        /// Decodes the Genome of a <see cref="INeatNetwork"/> into a <see cref="ReversableConcurrentDictionary{KeyType, ValueType}"/> (a concurrent wrapper with a reverse method for <see cref="Dictionary{TKey, TValue}"/>). Convertable to <see cref="IDictionary{TKey, TValue}"/> and <see cref="Dictionary{TKey, TValue}"/>.
+        /// <code>
+        /// Complexity: O(n)
+        /// </code>
+        /// <code>
+        /// Details: WORST: O(2n-2) -> 1 input node, 1 output node BEST: O(n) -> 0 hidden nodes EXACT: O(n) + O(input*hidden),
+        /// noticable slow downs with n -> 10,000
+        /// </code>
+        /// </summary>
+        /// <param name="network"></param>
+        /// <returns></returns>
+        public async Task<ReversableConcurrentDictionary<int, int>> DecodeGenome(INeatNetwork network)
         {
             // we should generate the phenotype from innovations alone
 
@@ -159,15 +212,12 @@ namespace NeuroSharp.NEAT
             // clear the old phenotype stuff out
             Senders.Clear();
             Recipients.Clear();
-            LayerDict.Clear();
-
-            // iterate through the innovations list and record where every node sends to and every node receives from
-            Span<IInnovation> innovations = new(network.Innovations);
+            await LayerDict.Clear();
 
             // ~ O(n)
-            for (int i = 0; i < innovations.Length; i++)
+            for (int i = 0; i < network.Innovations.Length; i++)
             {
-                ref IInnovation inn = ref innovations[i];
+                IInnovation inn = network.Innovations[i];
 
                 // only enabled genes show up in the phenotype
                 if (inn.Enabled is false)
@@ -182,23 +232,27 @@ namespace NeuroSharp.NEAT
                 AddSenderToRecipient(inn.OutputNode, inn.InputNode);
 
                 // determine if the node is an input, output, or hidden node, store that value
-                GetAndStoreNodeType(inn.InputNode, network);
-                GetAndStoreNodeType(inn.OutputNode, network);
+                await GetAndStoreNodeType(inn.InputNode, network);
+                await GetAndStoreNodeType(inn.OutputNode, network);
             }
 
-            // O(i * n)
+            // ~ O(i * n)
             // go through the hidden and find their exact layer
-            Span<int> hiddenSpan = new(hiddenNodes);
-            for (int i = 0; i < hiddenSpan.Length; i++)
+            for (int i = 0; i < hiddenNodes.Length; i++)
             {
-                GetAndSetHiddenLayer(hiddenSpan[i], network);
+                await GetAndSetHiddenLayer(hiddenNodes[i], network);
             }
 
             // now that we have what our input nodes, output nodes, and hidden nodes are and their exact location we can construct the matrix to represent the data
+            // reverse the dictionary and return it
+            return LayerDict;
+        }
+
+        [DoesNotReturn]
+        public IMatrix<T>[] GenerateMatrices(INeatNetwork network)
+        {
 
             throw new NotImplementedException();
-
-            return default;
         }
     }
 }

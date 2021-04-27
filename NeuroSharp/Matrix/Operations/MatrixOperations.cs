@@ -8,8 +8,8 @@ namespace NeuroSharp
 {
     public static class MatrixOperations<T> where T : unmanaged, IComparable<T>, IEquatable<T>
     {
-        public delegate T TwoElementOperation<T>(ref T left, ref T right);
-        public delegate T SingleElementOperation<T>(ref T MatrixElement);
+        public delegate T TwoElementOperation<U>(ref U left, ref U right);
+        public delegate T SingleElementOperation<U>(ref U MatrixElement);
 
         public static IMatrix<T> PerformMutableOperation(IMatrix<T> matrix, SingleElementOperation<T> Operation)
         {

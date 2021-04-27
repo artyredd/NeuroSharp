@@ -103,6 +103,9 @@ namespace NeuroSharp.NEAT
 
         public async Task SpeciateGeneration()
         {
+            // this is to remove the warning without pragma becuase i will forget otherwise
+            await Task.Run(() => null);
+
             void AddToSpecies(int index, int value)
             {
                 if (Species.Length <= index)

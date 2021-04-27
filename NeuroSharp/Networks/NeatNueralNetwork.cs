@@ -115,10 +115,12 @@ namespace NeuroSharp.NEAT
 
         public INeatNetwork Create(int InputNodes, int OutputNodes) => CreateAsync(InputNodes, OutputNodes).Result;
 
+#pragma warning disable CS1998
         public async Task<INeatNetwork> CreateAsync(int InputNodes, int OutputNodes)
         {
             return new NeatNueralNetwork((ushort)InputNodes, (ushort)OutputNodes);
         }
+#pragma warning restore CS1998
 
         public bool TryGetIndex(ushort NodeId, out int index)
         {
@@ -337,7 +339,7 @@ namespace NeuroSharp.NEAT
         //    // now that we have what our input nodes, output nodes, and hidden nodes are and their exact location we can construct the matrix to represent the data
         //}
 
-        public void GeneratePhenotype() => PhenotypeGenerator.Generate(this);
+        public void GeneratePhenotype() => PhenotypeGenerator.GenerateMatrices(this);
 
         public ushort IncrementNodeCount() => (ushort)Interlocked.Increment(ref NextNodeNumber);
         public ushort DecrementNodeCount() => (ushort)Interlocked.Decrement(ref NextNodeNumber);
