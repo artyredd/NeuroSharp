@@ -11,11 +11,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NeuroSharp.Tests", "NeuroSh
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NeuroSharp.Bench", "NeuroSharp.Bench\NeuroSharp.Bench.csproj", "{A5AD7F42-6CF0-4FC9-8631-2A2942118ACA}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NeuroSharpBlazor.Server", "NeuroSharpBlazor\Server\NeuroSharpBlazor.Server.csproj", "{386C29CE-C249-4433-AA43-9E16E28C8772}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NeuroSharpBlazor.Client", "NeuroSharpBlazor\Client\NeuroSharpBlazor.Client.csproj", "{B7126445-9315-41CA-81D0-9638E3B56849}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NeuroSharpBlazor.Shared", "NeuroSharpBlazor\Shared\NeuroSharpBlazor.Shared.csproj", "{25C66ED7-AA1C-4F1C-8508-F90C8F60B196}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NeuroSharpServer", "NeuroSharpServer\NeuroSharpServer.csproj", "{13D23CFA-804C-42CF-B72D-C346EF7E6EFC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -35,18 +31,10 @@ Global
 		{A5AD7F42-6CF0-4FC9-8631-2A2942118ACA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A5AD7F42-6CF0-4FC9-8631-2A2942118ACA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A5AD7F42-6CF0-4FC9-8631-2A2942118ACA}.Release|Any CPU.Build.0 = Release|Any CPU
-		{386C29CE-C249-4433-AA43-9E16E28C8772}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{386C29CE-C249-4433-AA43-9E16E28C8772}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{386C29CE-C249-4433-AA43-9E16E28C8772}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{386C29CE-C249-4433-AA43-9E16E28C8772}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B7126445-9315-41CA-81D0-9638E3B56849}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B7126445-9315-41CA-81D0-9638E3B56849}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B7126445-9315-41CA-81D0-9638E3B56849}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B7126445-9315-41CA-81D0-9638E3B56849}.Release|Any CPU.Build.0 = Release|Any CPU
-		{25C66ED7-AA1C-4F1C-8508-F90C8F60B196}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{25C66ED7-AA1C-4F1C-8508-F90C8F60B196}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{25C66ED7-AA1C-4F1C-8508-F90C8F60B196}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{25C66ED7-AA1C-4F1C-8508-F90C8F60B196}.Release|Any CPU.Build.0 = Release|Any CPU
+		{13D23CFA-804C-42CF-B72D-C346EF7E6EFC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{13D23CFA-804C-42CF-B72D-C346EF7E6EFC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{13D23CFA-804C-42CF-B72D-C346EF7E6EFC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{13D23CFA-804C-42CF-B72D-C346EF7E6EFC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

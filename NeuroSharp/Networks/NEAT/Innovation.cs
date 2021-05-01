@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Security.Cryptography;
@@ -8,12 +9,14 @@ using System.Threading.Tasks;
 
 namespace NeuroSharp.NEAT
 {
+    [DebuggerDisplay("{InputNode} → {OutputNode} —— {Id} ")]
     public class Innovation : IInnovation, IEqualityComparer<Innovation>
     {
         /// <summary>
         /// The innovation ID of this object
         /// </summary>
         public int Id { get; set; }
+
         /// <summary>
         /// The node that accepts the input for this innovation. InputNode -> Weight -> OutputNode
         /// </summary>
@@ -33,16 +36,6 @@ namespace NeuroSharp.NEAT
         /// The weight for this node
         /// </summary>
         public double Weight { get; set; }
-
-        /// <summary>
-        /// The index of the input node, since the input node array is not index based and is FIFO
-        /// </summary>
-        public ushort InputNodeIndex { get; set; }
-
-        /// <summary>
-        /// The index of the ouput node, since the input node array is not index based and is FIFO
-        /// </summary>
-        public ushort OutputNodeIndex { get; set; }
 
         public static INeatHasher Hasher { get; set; } = new DefaultHasher();
 

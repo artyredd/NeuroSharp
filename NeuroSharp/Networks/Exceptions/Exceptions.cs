@@ -35,5 +35,18 @@ namespace NeuroSharp.Networks
         {
             return new StackOverflowException($"Circular innovation Id({innovation?.Id}) From({innovation?.InputNode}) -> To({innovation?.OutputNode}). Innovations can not input from nodes above them in the network or output to nodes that are below them in the network.");
         }
+
+        /// <summary>
+        /// Returns exception:
+        /// <code>
+        /// Circular innovation Id(12) From(3) -> To(1). Innovations can not input from nodes above them in the network or output to nodes that are below them in the network.
+        /// </code>
+        /// </summary>
+        /// <param name="innovation"></param>
+        /// <returns></returns>
+        public static Exception CircularInnovationReference(int innovationId)
+        {
+            return new StackOverflowException($"Circular innovation Id({innovationId}). Innovations can not input from nodes above them in the network or output to nodes that are below them in the network.");
+        }
     }
 }

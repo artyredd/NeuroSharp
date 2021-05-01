@@ -7,22 +7,24 @@ namespace NeuroSharp.NEAT
     {
         IInnovation[] Innovations { get; set; }
 
-        INeatNode[] Nodes { get; set; }
-
         bool TopologyChanged { get; }
+
+        int[][] NodeLayers { get; }
+
+        IDictionary<int, ushort> NodeDictionary { get; }
 
         HashSet<string> InnovationHashes { get; }
 
         void GeneratePhenotype();
 
-        ushort IncrementNodeCount();
-
-        ushort DecrementNodeCount();
-
-        void AddNode(INeatNode node);
-
         Task AddInnovation(IInnovation innovation);
 
-        bool TryGetIndex(ushort NodeId, out int index);
+        public ushort IncrementNextNodeId();
+
+        public ushort DecrementNextNodeId();
+
+        Task<INeatNetwork> CreateAsync(int InputNodes, int OutputNodes, IInnovation[] Genome);
+
+        void Reset();
     }
 }

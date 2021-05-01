@@ -1,20 +1,222 @@
 ﻿@using NeuroSharp.NEAT
+@using System.IO;
+@using System.Threading;
 
-<div class="flex">
+<div class="flex" style=@("max-height: 90vh; overflow-y: clip;")>
     <div class="d-flex my-2">
         <div class="d-inline-flex mx-2">
             <BECanvas Width=@Width Height=@Height @ref="_canvasReference"></BECanvas>
         </div>
     </div>
     <div class="d-inline-flex flex flex-grow-1 mx-2 border border-dark rounded rounded-0 w-100">
-        <div class="my-2 mx-2" style="max-height: 400px; overflow-y: scroll;  min-width: 282px; overflow-x: hidden;">
-            <div class="btn-group" role="group" aria-label="Basic example">
-                <button type="button" class="btn btn-outline-primary" @onclick=Reset>Reset</button>
-                <button type="button" class="btn btn-outline-primary" @onclick=AddNode>+ Node</button>
-                <button type="button" class="btn btn-outline-primary" @onclick=AddConnection>+ Connection</button>
+        <div class="w-25 my-2 mx-2" style="max-height: 400px; overflow-y: scroll;  min-width: 282px; overflow-x: hidden; text-align: center;">
+            <div class="btn-group w-100 my-2" role="group" aria-label="Basic example">
+                <button type="button" class="btn btn-outline-primary" @onclick=ResetAll>Reset All networks</button>
+                <button type="button" class="btn btn-outline-primary" @onclick=ClearConsole>Clear Console</button>
+            </div>
+            <ul class="list-group my-4" style="width: 97%; text-align: center;">
+                <li class="list-group-item list-group-item-secondary">
+                    <h4>Breeding</h4>
+                </li>
+                <li class="list-group-item align-items-center form-group">
+                    <div class="btn-group w-100 my-2" role="group" aria-label="Basic example">
+                        <button type="button" class="btn btn-outline-primary" @onclick=Breed>Breed</button>
+                    </div>
+                </li>
+                <li class="list-group-item align-items-center form-group">
+                    <h5>Parent Fitness</h5>
+                    <div class="btn-group" role="group" aria-label="Basic radio toggle button group">
+                        <input type="radio" class="btn-check" name="btnradio" id="btnradio1" autocomplete="off" @onclick="()=>parentFitnessState = FitnessState.LeftMoreFit">
+                        <label class="btn btn-outline-primary" for="btnradio1">@((MarkupString)left.Name)</label>
+
+                        <input type="radio" class="btn-check" name="btnradio" id="btnradio2" autocomplete="off" @onclick="()=>parentFitnessState = FitnessState.EqualFitness" checked>
+                        <label class="btn btn-outline-primary" for="btnradio2">Equal Fitness</label>
+
+                        <input type="radio" class="btn-check" name="btnradio" id="btnradio3" autocomplete="off" @onclick="()=>parentFitnessState = FitnessState.RightMoreFit">
+                        <label class="btn btn-outline-primary" for="btnradio3">@((MarkupString)right.Name)</label>
+                    </div>
+                </li>
+                @{
+                    var breakdown = ((DefaultNetworkComparer)controller.NetworkComparer).GenerateVerboseCompatibility(left, right);
+                }
+                <li class="list-group-item align-items-center form-group">
+                    <h5> Current Compatibility <span class="badge bg-dark">𝛿 &asymp; @Math.Round(breakdown.Compatibility, 2) @( breakdown.Compatibility<=controller.CompatibilityThreashold ? (MarkupString)$"&#10004;" : (MarkupString)$"&#10006;")</span></h5>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <td>
+                                    Excess
+                                </td>
+                                <td>
+                                    Disjoint
+                                </td>
+                                <td style="text-decoration: overline;" title="Average weight">
+                                    Weight
+                                </td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <span class="badge bg-dark">𝚬 &asymp; @breakdown.Excess</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-dark">𝓓 &asymp; @breakdown.Disjoint</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-dark"><span style="text-decoration:overline; font-weight: bold;">W</span> &asymp; @Math.Round(breakdown.AverageWeightDifference, 3)</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </li>
+                <li class="list-group-item align-items-center form-group">
+                    <h5>Compatibility Threashold <span class="badge bg-dark">𝛿<i><sub>t</sub></i> &asymp; @controller.CompatibilityThreashold</span></h5>
+                    <input type="range" class="form-range" @bind-value=@controller.CompatibilityThreashold min=@(0d) max=@(4d) step=@(0.001d) id="customRange3">
+                </li>
+                <li class="list-group-item align-items-center form-group">
+                    <h5>Excess Modifier <span class="badge bg-dark">C<i><sub>1</sub></i> &asymp; @controller.NetworkComparer.ExcessCoefficient</span></h5>
+                    <input type="range" class="form-range" @bind-value=@controller.NetworkComparer.ExcessCoefficient min=@(0d) max=@(4d) step=@(0.001d) id="customRange3">
+                </li>
+                <li class="list-group-item align-items-center form-group">
+                    <h5>Disjoint Modifier <span class="badge bg-dark">C<i><sub>2</sub></i> &asymp; @controller.NetworkComparer.DisjointCoefficient</span></h5>
+                    <input type="range" class="form-range" @bind-value=@controller.NetworkComparer.DisjointCoefficient min=@(0d) max=@(4d) step=@(0.001d) id="customRange3">
+                </li>
+                <li class="list-group-item align-items-center form-group">
+                    <h5>Weight Diff. Modifier <span class="badge bg-dark">C<i><sub>3</sub></i> &asymp; @controller.NetworkComparer.WeightCoefficient</span></h5>
+                    <input type="range" class="form-range" @bind-value=@controller.NetworkComparer.WeightCoefficient min=@(0d) max=@(4d) step=@(0.001d) id="customRange3">
+                </li>
+            </ul>
+            <ul class="list-group my-4" style="width: 97%; text-align: center;">
+                <li class="list-group-item list-group-item-secondary">
+                    <h4>Mutation Settings</h4>
+                </li>
+                <li class="list-group-item align-items-center form-group">
+                    <h5>Mutations Per Click <span class="badge bg-dark">@MutationsPerClick</span></h5>
+                    <input type="range" class="form-range" @bind-value=@MutationsPerClick min=@MinMutationsPC max=@MaxMutationsPC step=@MutationsPCStep id="customRange3">
+
+                </li>
+                <li class="list-group-item  align-items-center form-group">
+                    <h5>Weight Modifier <span class="badge bg-dark">@Math.Round(MutationModifier * 100d, 2)%</span></h5>
+                    <input type="range" class="form-range" @bind-value=@MutationModifier min=@MinMutationModifier max=@MaxMutationModifier step="0.001" id="customRange3">
+                </li>
+            </ul>
+            <ul class="list-group my-4" style="width: 97%; text-align: center;">
+                <li class="list-group-item list-group-item-secondary">
+                    <h4>Weight Chances</h4>
+                </li>
+                <li class="list-group-item align-items-center form-group">
+                    <div class="progress my-2">
+                        <div class="progress-bar" role="progressbar" style=@($"width: {ReassignChanceProgressSize}%;") aria-valuemin="0" aria-valuemax="100">@(ReassignChanceProgressSize)%</div>
+                        <div class="progress-bar bg-success" role="progressbar" style=@($"width: {PerturbChanceProgressSize}%;") aria-valuemin="0" aria-valuemax="100">@(PerturbChanceProgressSize)%</div>
+                        <div class="progress-bar bg-danger" role="progressbar" style=@($"width: {RemainingWeightProgressSize}%;") aria-valuemin="0" aria-valuemax="100">@(RemainingWeightProgressSize)%</div>
+                    </div>
+                </li>
+                <li class="list-group-item align-items-center form-group">
+                    <h5>Reassign Weight &#127922; <span class="badge bg-primary">@Math.Round(ReassignChance * 100d, 2)%</span></h5>
+                    <input type="range" class="form-range" @bind-value=@ReassignChance min=@MinReassignChance max=@MaxReassignChance step="0.001" id="customRange3">
+                </li>
+                <li class="list-group-item  align-items-center form-group">
+                    <h5>Modify Weight &#127922; <span class="badge bg-success">@Math.Round(PerturbChance * 100d, 2)%</span></h5>
+                    <input type="range" class="form-range" @bind-value=@PerturbChance min=@MinPerturbChance max=@MaxPerturbChance step="0.001" id="customRange3">
+                </li>
+            </ul>
+            <ul class="list-group my-4" style="width: 97%; text-align: center;">
+                <li class="list-group-item list-group-item-secondary">
+                    <h4>Mutation Chances</h4>
+                </li>
+                <li class="list-group-item align-items-center form-group">
+                    <div class="progress my-2">
+                        <div class="progress-bar" role="progressbar" style=@($"width: {AddNodeProgressSize}%;") aria-valuemin="0" aria-valuemax="100">@(AddNodeProgressSize)%</div>
+                        <div class="progress-bar bg-success" role="progressbar" style=@($"width: {AddConnectionProgressSize}%;") aria-valuemin="0" aria-valuemax="100">@(AddConnectionProgressSize)%</div>
+                        <div class="progress-bar bg-danger" role="progressbar" style=@($"width: {RemainingProgressSize}%;") aria-valuemin="0" aria-valuemax="100">@(RemainingProgressSize)%</div>
+                    </div>
+                </li>
+                <li class="list-group-item align-items-center form-group">
+                    <h5>Add Node &#127922; <span class="badge bg-primary">@Math.Round(AddNodeChance * 100d, 2)%</span></h5>
+                    <input type="range" class="form-range" @bind-value=@AddNodeChance min=@MinAddNodeChance max=@MaxAddNodeChance step="0.001" id="customRange3">
+                </li>
+                <li class="list-group-item  align-items-center form-group">
+                    <h5>Add Connection &#127922; <span class="badge bg-success">@Math.Round(AddConnectionChance * 100d, 2)%</span></h5>
+                    <input type="range" class="form-range" @bind-value=@AddConnectionChance min=@MinAddConnectionChance max=@MaxAddConnectionChance step="0.001" id="customRange3">
+                </li>
+            </ul>
+            <ul class="list-group my-4" style="width: 97%; text-align: center;">
+                <li class="list-group-item list-group-item-secondary">
+                    <h4>Network Setup</h4>
+                </li>
+                <li class="list-group-item align-items-center form-group">
+                    <h5>Max Networks <span class="badge bg-dark">@startingNetworks</span></h5>
+                    <input type="range" class="form-range" @bind-value=@startingNetworks min=@(2) max=@maxNodes step=@(1) id="customRange3">
+                </li>
+                <li class="list-group-item align-items-center form-group">
+                    <h5>Input Nodes <span class="badge bg-dark">@startingInputNodes</span></h5>
+                    <input type="range" class="form-range" @bind-value=@startingInputNodes min=@minNodes max=@maxNodes step=@(1) id="customRange3">
+                </li>
+                <li class="list-group-item  align-items-center form-group">
+                    <h5>Output Nodes <span class="badge bg-dark">@startingOutputNodes</span></h5>
+                    <input type="range" class="form-range" @bind-value=@startingOutputNodes min=@minNodes max=@maxNodes step=@(1) id="customRange3">
+                </li>
+            </ul>
+        </div>
+        <div class="flex my-2 mx-2 w-25 text-center" style="max-height: 400px; overflow-y: no-display;">
+            <div class="flex w-100">
+                <div class="btn-group">
+                    <button class="btn btn-@(buttonTypes[selectedLeftItem % buttonTypes.Length]) btn-lg dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        @((MarkupString)left.Name)
+                    </button>
+                    <ul class="dropdown-menu" style="max-height: 300px; overflow-y: auto; overflow-x: hidden;">
+                        @for (int i = 0; i < networks.Count; i++)
+                        {
+                            int x = i;
+                            <li><button class=@networkButtonColors[x % networkButtonColors.Length] type="button" @onclick="()=>selectedLeftItem = x">@((MarkupString)networks[i].Name)</button></li>
+                        }
+                    </ul>
+                </div>
+                <div class="btn-group w-100 my-2" role="group" aria-label="Basic example">
+                    <button type="button" class="btn btn-outline-primary" @onclick=ResetLeft>Reset</button>
+                    <button type="button" class="btn btn-outline-primary" @onclick=MutateLeft>Mutate</button>
+                    <button type="button" class="btn btn-outline-primary" @onclick=AddNodeLeft>+ Node</button>
+                    <button type="button" class="btn btn-outline-primary" @onclick=AddConnectionLeft>+ Connection</button>
+                </div>
+            </div>
+            <div class="flex w-100 my-2 text-center" style=@($"max-height: {400-100}px; overflow-y: scroll;")>
+                @foreach (var item in left.Innovations)
+                {
+                    <GenoTypeEntry Innovation=@item></GenoTypeEntry>
+                }
             </div>
         </div>
-        <div class="w-25" style="max-height: 400px; overflow-y: scroll; height: 400px;">
+        <div class="flex my-2 mx-2 w-25 text-center" style="max-height: 400px; overflow-y: no-display;">
+            <div class="flex w-100">
+                <div class="btn-group">
+                    <button class="btn btn-@(buttonTypes[selectedRightItem % buttonTypes.Length]) btn-lg dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        @((MarkupString)right.Name)
+                    </button>
+                    <ul class="dropdown-menu" style="max-height: 300px; overflow-y: auto; overflow-x: hidden;">
+                        @for (int i = 0; i < networks.Count; i++)
+                        {
+                            int x = i;
+                            <li><button class=@networkButtonColors[x % networkButtonColors.Length] type="button" @onclick="()=>selectedRightItem = x">@((MarkupString)networks[i].Name)</button></li>
+                        }
+                    </ul>
+                </div>
+                <div class="btn-group w-100 my-2" role="group" aria-label="Basic example">
+                    <button type="button" class="btn btn-outline-primary" @onclick=ResetRight>Reset</button>
+                    <button type="button" class="btn btn-outline-primary" @onclick=MutateRight>Mutate</button>
+                    <button type="button" class="btn btn-outline-primary" @onclick=AddNodeRight>+ Node</button>
+                    <button type="button" class="btn btn-outline-primary" @onclick=AddConnectionRight>+ Connection</button>
+                </div>
+            </div>
+            <div class="flex w-100 my-2 text-center" style=@($"max-height: {400-100}px; overflow-y: scroll;")>
+                @foreach (var item in right.Innovations)
+                {
+                    <GenoTypeEntry Innovation=@item></GenoTypeEntry>
+                }
+            </div>
+        </div>
+        <div class="w-25" style="max-height: 400px; overflow-y: scroll; height: 400px; min-width: 300px;">
+            <h2 class="text-center">Console</h2>
             <ul class="list-group list-group-flush w-100">
                 @foreach (var item in console)
                 {
@@ -22,17 +224,148 @@
                 }
             </ul>
         </div>
-        <div class="flex my-2 mx-2" style="max-height: 400px; overflow-y: scroll;">
-            @foreach (var item in nn.Innovations)
-            {
-                <GenoTypeEntry Innovation=@item></GenoTypeEntry>
-            }
-        </div>
     </div>
 </div>
 
 @code {
-    NeatNueralNetwork nn = new(3, 2);
+
+    SpeciesController<NeatNueralNetwork> controller = new();
+
+    List<NeatNueralNetwork> networks = new()
+    {
+            new(3, 2),
+            new(3, 2)
+        };
+
+    NeatNueralNetwork childNetwork = null;
+
+    NeatNueralNetwork left => networks[selectedLeftItem];
+    NeatNueralNetwork right => networks[selectedRightItem];
+
+    int _selectedLeftItem = 0;
+    int selectedLeftItem
+    {
+        get => _selectedLeftItem;
+        set
+        {
+            _selectedLeftItem = value;
+            InvokeAsync(RedrawCanvas);
+        }
+    }
+
+    int _selectedRightItem = 1;
+    int selectedRightItem
+    {
+        get => _selectedRightItem;
+        set
+        {
+            _selectedRightItem = value;
+            InvokeAsync(RedrawCanvas);
+        }
+    }
+
+    int startingInputNodes = 3;
+    int startingOutputNodes = 2;
+    int minNodes = 1;
+    int maxNodes = 20;
+
+    int startingNetworks = 2;
+
+    private int MutationsPerClick = 1;
+    private int MaxMutationsPC = 1000;
+    private int MinMutationsPC = 1;
+    private int MutationsPCStep = 20;
+
+    private double MutationModifier
+    {
+        get => left.Mutater.WeightMutationModifier;
+        set
+        {
+            InvokeOnNetworks(x => x.Mutater.WeightMutationModifier = value);
+        }
+    }
+    private double MaxMutationModifier = 1;
+    private double MinMutationModifier = 0.001;
+
+    private string ReassignChanceProgressSize => $"{(int)(ReassignChance * 100)}";
+    private string PerturbChanceProgressSize => $"{(int)(PerturbChance * 100)}";
+    private string RemainingWeightProgressSize => $"{(int)((1d - ReassignChance - PerturbChance) * 100)}";
+
+    private double ReassignChance
+    {
+        get => left.Mutater.WeightReassignmentChance;
+        set
+        {
+            double val = Clamp(value, 1 - PerturbChance);
+            InvokeOnNetworks(x => x.Mutater.WeightReassignmentChance = val);
+        }
+    }
+    private double MaxReassignChance = 1;
+    private double MinReassignChance = 0.001;
+
+    private double PerturbChance
+    {
+        get => left.Mutater.MutateWeightChance;
+        set
+        {
+            double val = Clamp(value, 1 - ReassignChance);
+            InvokeOnNetworks(x => x.Mutater.MutateWeightChance = val);
+        }
+    }
+    private double MaxPerturbChance = 1;
+    private double MinPerturbChance = 0.001;
+
+    private string AddNodeProgressSize => $"{(int)(AddNodeChance * 100)}";
+    private string AddConnectionProgressSize => $"{(int)(AddConnectionChance * 100)}";
+    private string RemainingProgressSize => $"{(int)((1d - AddNodeChance - AddConnectionChance) * 100)}";
+
+    private double AddNodeChance
+    {
+        get => left.Mutater.AddNodeChance;
+        set
+        {
+            double val = Clamp(value, 1 - AddConnectionChance);
+            InvokeOnNetworks(x => x.Mutater.AddNodeChance = value);
+        }
+    }
+    private double MaxAddNodeChance = 1;
+    private double MinAddNodeChance = 0.001;
+
+    private double AddConnectionChance
+    {
+        get => left.Mutater.AddConnectionChance;
+        set
+        {
+            double val = Clamp(value, 1 - AddNodeChance);
+            InvokeOnNetworks(x => x.Mutater.AddConnectionChance = value);
+        }
+    }
+    private double MaxAddConnectionChance = 1;
+    private double MinAddConnectionChance = 0.001;
+
+    private FitnessState parentFitnessState = FitnessState.EqualFitness;
+
+    string[] buttonTypes = {
+        "primary",
+        "secondary",
+        "success",
+        "danger",
+        "warning",
+        "info",
+        "light",
+        "dark",
+    };
+
+    string[] networkButtonColors = {
+        "dropdown-item list-group-item-primary",
+        "dropdown-item list-group-item-secondary",
+        "dropdown-item list-group-item-success",
+        "dropdown-item list-group-item-danger",
+        "dropdown-item list-group-item-warning",
+        "dropdown-item list-group-item-info",
+        "dropdown-item list-group-item-light",
+        "dropdown-item list-group-item-dark"
+    };
 
     public int Width = 1600;
     public int Height = 450;
@@ -46,9 +379,58 @@
     const string Black = "rgb(0,0,0)";
     const string White = "rgb(255,255,255)";
 
-    List<string> console = new();
+    List<string>
+        console = new();
 
     System.Diagnostics.Stopwatch watch = new();
+
+    async Task<string> GetName()
+    {
+        string name = "<span style=\"font-size:25px\">";
+
+        async Task<string> emojiName()
+        {
+            int num = await Helpers.NextAsync(0, 61);
+            return $" &#1280{(num < 10 ? $"0{num}" : num)};";
+        }
+
+        name += await emojiName();
+        name += await emojiName();
+        name += await emojiName();
+
+        name += "</span>";
+
+        return name;
+    }
+
+    private void InvokeOnNetworks(Action<INeatNetwork> expression)
+    {
+        for (int i = 0; i < networks.Count; i++)
+        {
+            expression(networks[i]);
+        }
+    }
+
+    private async Task Breed()
+    {
+        IInnovation[] derivedGenome = controller.NetworkComparer.DeriveGenome(left, right, parentFitnessState);
+
+        childNetwork = (NeatNueralNetwork)await left.CreateAsync(left.InputNodes, left.OutputNodes, derivedGenome);
+
+        childNetwork.Name = await GetName();
+
+        networks.Add(childNetwork);
+
+        Log($"Created network {childNetwork.Name}", MsgType.warning);
+
+        await RedrawCanvas();
+    }
+
+    private double Clamp(double value, double upper, double lower = 0d)
+    {
+        // im sorry this was so easy to write but looks like cancer
+        return value > upper ? upper : value < lower ? lower : value;
+    }
 
     private enum MsgType
     {
@@ -56,6 +438,13 @@
         warning,
         error,
         success
+    }
+
+    private async Task ClearConsole()
+    {
+        console.Clear();
+        await Task.Run(() => System.Threading.Thread.Sleep(100));
+        Log("Console Cleared", MsgType.success);
     }
 
     private void Log(string msg, MsgType msgType = MsgType.none)
@@ -75,22 +464,16 @@
                 console.Insert(0, $"<li class=\"list-group-item list-group-item-success\">{watch.ElapsedMilliseconds} ms:\t{msg}</li>");
                 break;
         }
+
     }
 
-    private async Task Reset()
-    {
-        nn = new(3, 2);
-        await Start();
-        console.Clear();
-    }
-
-    private async Task AddNode()
+    private async Task AddNode(INeatNetwork network)
     {
         Log($"Adding Node", MsgType.warning);
-        var result = await ((DefaultMutater)nn.Mutater).AddNode(nn);
+        var result = await ((DefaultMutater)network.Mutater).AddNode(network);
 
         // re draw the UI
-        await Start();
+        await RedrawCanvas();
 
         switch (result)
         {
@@ -109,13 +492,13 @@
         }
     }
 
-    private async Task AddConnection()
+    private async Task AddConnection(INeatNetwork network)
     {
         Log($"Adding Connection", MsgType.warning);
-        AddConnectionResult result = await ((DefaultMutater)nn.Mutater).AddConnection(nn);
+        AddConnectionResult result = await ((DefaultMutater)network.Mutater).AddConnection(network);
 
         // re draw the UI
-        await Start();
+        await RedrawCanvas();
 
         switch (result)
         {
@@ -137,33 +520,95 @@
         }
     }
 
-    private async Task DrawPhenotype(NeatNueralNetwork nn, int x, int y)
+    private async Task Mutate(INeatNetwork network)
     {
-        if (nn.Nodes.Length is 0)
+        for (int i = 0; i < MutationsPerClick; i++)
         {
-            return;
+            await network.Mutate();
+        }
+        await RedrawCanvas();
+        Log($"Mutated: {MutationsPerClick} times.");
+    }
+
+    private async Task MutateLeft() => await Mutate(left);
+
+    private async Task MutateRight() => await Mutate(right);
+
+    private async Task AddNodeRight() => await AddNode(right);
+
+    private async Task AddConnectionRight() => await AddConnection(right);
+
+    private async Task ResetAll()
+    {
+        selectedLeftItem = 0;
+        selectedRightItem = 1;
+        childNetwork = null;
+
+        networks = new()
+        {
+                new(startingInputNodes, startingOutputNodes) { Name = await GetName() },
+                new(startingInputNodes, startingOutputNodes) { Name = await GetName() }
+            };
+
+
+
+        for (int i = 2; i < startingNetworks; i++)
+        {
+            string name = await GetName();
+
+            networks.Add(new NeatNueralNetwork(startingInputNodes, startingOutputNodes) { Name = name });
         }
 
-        int[][] layers = await nn.PhenotypeGenerator.GetLayers(nn);
+        await RedrawCanvas();
+
+        console.Clear();
+
+        Log($"Created {startingNetworks} networks.", MsgType.success);
+    }
+
+    private async Task ResetLeft()
+    {
+        networks[selectedLeftItem] = new(startingInputNodes, startingOutputNodes) { Name = await GetName() };
+        Log("Reset left network.", MsgType.success);
+        await RedrawCanvas();
+    }
+
+    private async Task ResetRight()
+    {
+        networks[selectedRightItem] = new(startingInputNodes, startingOutputNodes) { Name = await GetName() };
+        Log("Reset right network.", MsgType.success);
+        await RedrawCanvas();
+    }
+
+    private async Task AddNodeLeft() => await AddNode(left);
+
+    private async Task AddConnectionLeft() => await AddConnection(left);
+
+    private async Task<int> DrawPhenotype(NeatNueralNetwork nn, int x, int y)
+    {
+        int[][] layers = nn.NodeLayers;
 
         if (layers.Length is 0)
         {
-            return;
+            return 0;
         }
 
         var inputNodes = layers[1];
 
-        float nodeSize = 10;
+        float nodeSize = 10f;
 
         float distanceBetweenNodes = 50f + nodeSize;
 
         float lineWidth = 5;
 
-        List<(int node, float x, float y, NodeType type)> nodes = new();
+        List<(int node, float x, float y, NodeType type)>
+    nodes = new();
+
+        // input nodes
 
         for (int i = 0; i < inputNodes.Length; i++)
         {
-            float nodeY = y + (distanceBetweenNodes * i);
+            float nodeY = (Height / (nn.InputNodes + 1) * (i + 1));
 
             nodes.Add((inputNodes[i], x, nodeY, NodeType.Input));
         }
@@ -177,9 +622,10 @@
 
         for (int i = 0; i < outputs.Length; i++)
         {
-            float nodeY = y + (distanceBetweenNodes * i) + (distanceBetweenNodes / 2 * (inputNodes.Length - outputs.Length));
+            //float nodeY = y + (distanceBetweenNodes * i) + (distanceBetweenNodes / 2 * (inputNodes.Length - outputs.Length));
+            float nodeY = (Height / (nn.OutputNodes + 1) * (i + 1));
 
-            nodes.Add((outputs[i], x + outputX, nodeY, NodeType.Output));
+            nodes.Add((outputs[i], outputX, nodeY, NodeType.Output));
         }
 
         int previousLayerCount = inputNodes.Length;
@@ -191,7 +637,8 @@
             {
                 int node = layers[layer][nodeIdex];
 
-                float nodeY = y + (distanceBetweenNodes * nodeIdex) + (distanceBetweenNodes / 2 * (previousLayerCount - layers[layer].Length));
+                //float nodeY = y + (distanceBetweenNodes * nodeIdex) + (distanceBetweenNodes / 2 * (previousLayerCount - layers[layer].Length));
+                float nodeY = (Height / (layers[layer].Length + 1) * (nodeIdex + 1));
 
                 float nodeX = x + (layer * distanceBetweenNodes);
 
@@ -212,9 +659,9 @@
             var left = nodes.Where(x => x.node == nn.Innovations[i].InputNode).FirstOrDefault();
             var right = nodes.Where(x => x.node == nn.Innovations[i].OutputNode).FirstOrDefault();
 
-            float startX = left.x * 1.05f;
+            float startX = left.x;
             float startY = left.y;
-            float endX = right.x * 0.95f;
+            float endX = right.x - (nodeSize * 2);
             float endY = right.y;
 
             await DrawArrow(startX, startY, endX, endY, Black, lineWidth / 2);
@@ -224,6 +671,8 @@
         {
             await DrawNode(item.x, item.y, item.node, item.type);
         }
+
+        return (int)outputX;
     }
 
     private async Task DrawArrow(float x, float y, float targetX, float targetY, string Color = Black, float lineWidth = 2f)
@@ -233,16 +682,17 @@
         var dy = targetY - y;
         var angle = Math.Atan2(dy, dx);
         await Batch(
-            _context.SetStrokeStyleAsync(Color),
-            _context.SetLineWidthAsync(lineWidth),
-            _context.MoveToAsync(x, y),
-            _context.QuadraticCurveToAsync(targetX - 50, (targetY + y) / 2, targetX, targetY),
-            _context.StrokeAsync(),
-            _context.MoveToAsync(targetX, targetY),
-            _context.LineToAsync(targetX - headlen * Math.Cos(angle - Math.PI / 6), targetY - headlen * Math.Sin(angle - Math.PI / 6)),
-            _context.MoveToAsync(targetX, targetY),
-            _context.LineToAsync(targetX - headlen * Math.Cos(angle + Math.PI / 6), targetY - headlen * Math.Sin(angle + Math.PI / 6)),
-            _context.StrokeAsync()
+        _context.SetStrokeStyleAsync(Color),
+        _context.SetLineWidthAsync(lineWidth),
+        _context.MoveToAsync(x, y),
+        _context.LineToAsync(targetX, targetY),
+        //_context.QuadraticCurveToAsync(targetX - 50, (targetY + y) / 2, targetX, targetY),
+        _context.StrokeAsync(),
+        _context.MoveToAsync(targetX, targetY),
+        _context.LineToAsync(targetX - headlen * Math.Cos(angle - Math.PI / 6), targetY - headlen * Math.Sin(angle - Math.PI / 6)),
+        _context.MoveToAsync(targetX, targetY),
+        _context.LineToAsync(targetX - headlen * Math.Cos(angle + Math.PI / 6), targetY - headlen * Math.Sin(angle + Math.PI / 6)),
+        _context.StrokeAsync()
         );
     }
 
@@ -258,12 +708,13 @@
 
     private async Task DrawCircle(float x, float y, float radius, float width, bool filled = false, string StrokeColor = Black, string FillColor = Black)
     {
-        var tasks = new List<Task> {
-            _context.BeginPathAsync(),
-            _context.SetStrokeStyleAsync(StrokeColor),
-            _context.SetLineWidthAsync(width),
-            _context.ArcAsync(x, y, radius, 0, 2 * Math.PI),
-            _context.StrokeAsync()
+        var tasks = new List<Task>
+{
+        _context.BeginPathAsync(),
+        _context.SetStrokeStyleAsync(StrokeColor),
+        _context.SetLineWidthAsync(width),
+        _context.ArcAsync(x, y, radius, 0, 2 * Math.PI),
+        _context.StrokeAsync()
         };
         if (filled)
         {
@@ -272,15 +723,46 @@
             tasks.Add(_context.ClosePathAsync());
         }
         await Batch(
-            tasks.ToArray()
+        tasks.ToArray()
         );
     }
 
     private async Task DrawText(float x, float y, string text = "Example Text", float size = 10, string Color = Black, float maxWidth = 50)
     {
         await Batch(
-            _context.SetFontAsync($"{size}px sans-serif"),
-            _context.FillTextAsync(text, x, y, maxWidth)
+        _context.SetFontAsync($"{size}px sans-serif"),
+        _context.FillTextAsync(text, x, y, maxWidth)
+        );
+    }
+
+    private async Task DrawTriangle()
+    {
+        async Task Wait(int ms = 10)
+        {
+            await Task.Run(() => System.Threading.Thread.Sleep(ms));
+        }
+        // load primes
+        // draw lines
+        float previousY = 0;
+        float previousX = Width / 2;
+        for (int i = 0; i < Width; i += 1)
+        {
+            float val = (Height / 5) * (i % 71);
+            await DrawLine(previousX, previousY, i, val);
+            previousX = i;
+            previousY = val;
+            await Wait();
+        }
+    }
+
+    private async Task DrawLine(float x, float y, float targetX, float targetY, string Color = Black, float lineWidth = 2f)
+    {
+        await Batch(
+        _context.SetStrokeStyleAsync(Color),
+        _context.SetLineWidthAsync(lineWidth),
+        _context.MoveToAsync(x, y),
+        _context.QuadraticCurveToAsync(targetX - 50, (targetY + y) / 2, targetX, targetY),
+        _context.StrokeAsync()
         );
     }
 
@@ -296,33 +778,41 @@
         await _context.EndBatchAsync();
     }
 
-    private async Task Start()
+    private async Task RedrawCanvas()
     {
         await _context.BeginBatchAsync();
 
         await Batch(
-            _context.SetFillStyleAsync("rgb(100, 100, 100)"),
-            _context.FillRectAsync(0, 0, Width, Height)
+        _context.SetFillStyleAsync("rgb(100, 100, 100)"),
+        _context.FillRectAsync(0, 0, Width, Height)
         );
 
         await Batch(
-            _context.BeginPathAsync(),
-            _context.SetStrokeStyleAsync("rgb(0,0,0)"),
-            _context.SetLineWidthAsync(10),
-            _context.SetLineJoinAsync(LineJoin.Round),
-            _context.MoveToAsync(0, 0),
-            _context.LineToAsync(Width, 0),
-            _context.LineToAsync(Width, Height),
-            _context.LineToAsync(0, Height),
-            _context.LineToAsync(0, 0),
-            _context.SetLineCapAsync(LineCap.Round),
-            _context.StrokeAsync()
+        _context.BeginPathAsync(),
+        _context.SetStrokeStyleAsync("rgb(0,0,0)"),
+        _context.SetLineWidthAsync(10),
+        _context.SetLineJoinAsync(LineJoin.Round),
+        _context.MoveToAsync(0, 0),
+        _context.LineToAsync(Width, 0),
+        _context.LineToAsync(Width, Height),
+        _context.LineToAsync(0, Height),
+        _context.LineToAsync(0, 0),
+        _context.SetLineCapAsync(LineCap.Round),
+        _context.StrokeAsync()
         );
 
-        //await DrawCircle(Width / 2, Height / 2, 55, 1, true);
+        int leftX = await DrawPhenotype(left, Width / 16, Height / 4);
 
-        await DrawPhenotype(nn, Width / 8, Height / 4);
+        int x = leftX + (Width / 16);
 
+        int rightX = await DrawPhenotype(right, x, Height / 4);
+
+        x = rightX + (Width / 16);
+
+        if (childNetwork != null)
+        {
+            await DrawPhenotype(childNetwork, x, Height / 4);
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -333,7 +823,11 @@
 
             this._context = await this._canvasReference.CreateCanvas2DAsync();
 
-            await Start();
+            await ResetAll();
+
+            await RedrawCanvas();
+
+            Log("Started Application", MsgType.success);
 
             await InvokeAsync(() => StateHasChanged());
         }

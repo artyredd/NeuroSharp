@@ -1,0 +1,16 @@
+﻿@using NeuroSharp.NEAT
+
+<div class="card d-inline-flex mx-1 my-1">
+    <div class="card-header">
+        Innovation @Innovation.Id
+    </div>
+    <div class="card-body text-truncate" style="text-align: center; max-width: 129px;">
+        <h5 class="card-title">@Innovation.InputNode &#8594; @Innovation.OutputNode</h5>
+        <p class="card-text">@(Innovation.Enabled ? "Enabled" : "Disabled")</p>
+        <p class="card-text">@Innovation.Weight</p>
+    </div>
+</div>
+@code {
+    [Parameter]
+    public IInnovation Innovation { get; set; }
+}

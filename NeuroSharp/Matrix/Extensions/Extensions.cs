@@ -4,7 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-
+using System.Diagnostics;
+using static NeuroSharp.Helpers;
 namespace NeuroSharp
 {
     /// <summary>
@@ -153,6 +154,7 @@ namespace NeuroSharp
 
             return targetMatrix;
         }
+
         public static bool Equals<T>(this IMatrix<T> Left, IMatrix<T> right) where T : unmanaged, IComparable<T>, IEquatable<T>
         {
             if (Left.Rows != right.Rows || Left.Columns != right.Columns)
@@ -183,7 +185,8 @@ namespace NeuroSharp
         /// <param name="value"></param>
         /// <param name="Limiter"></param>
         /// <returns></returns>
-        public static Task AddValueToArray<T>(this IDictionary<T, T[]> dict, T key, T value) => AddValueToArray(dict, key, value, null);
+        [DebuggerHidden]
+        public static Task AppendToValueAsync<T>(this IDictionary<T, T[]> dict, T key, T value) => AppendToValueAsync(dict, key, value, null);
 
         /// <summary>
         /// Searches the dictionary for the <paramref name="key"/>, if it does not exists it creates a new <see cref="{T}[]"/> with the <paramref name="value"/> as the first entry. If the <paramref name="key"/> is found, the array is resized and the <paramref name="value"/> is added as the last element in the array.
@@ -194,7 +197,8 @@ namespace NeuroSharp
         /// <param name="value"></param>
         /// <param name="Limiter"></param>
         /// <returns></returns>
-        public static async Task AddValueToArray<T>(this IDictionary<T, T[]> dict, T key, T value, SemaphoreSlim Limiter)
+        [DebuggerHidden]
+        public static async Task AppendToValueAsync<T, U>(this IDictionary<T, U[]> dict, T key, U value, SemaphoreSlim Limiter)
         {
             if (Limiter is not null)
             {
@@ -209,12 +213,12 @@ namespace NeuroSharp
                     // i could probably remove this check since it doesnt make sense for a node to have more than one connection to the same node
                     if (arr.Contains(value) is false)
                     {
-                        dict[key] = Array.ResizeAndAdd(arr, value);
+                        dict[key] = Helpers.Array.AppendValue(arr, value);
                     }
                 }
                 else
                 {
-                    dict.Add(key, new T[] { value });
+                    dict.Add(key, new U[] { value });
                 }
             }
             finally
@@ -223,34 +227,93 @@ namespace NeuroSharp
             }
         }
 
-        public static class Array
+        /// <summary>
+        /// Searches the dictionary for the <paramref name="key"/>, if it does not exists it creates a new <see cref="{T}[]"/> with the <paramref name="value"/> as the first entry. If the <paramref name="key"/> is found, the array is resized and the <paramref name="value"/> is added as the last element in the array.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="dict"></param>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <param name="Limiter"></param>
+        /// <returns>
+        /// <see langword="true"/> when the key was found.
+        /// <para>
+        /// </para>
+        /// <see langword="false"/> when the key was not found, but added.
+        /// </returns>
+        [DebuggerHidden]
+        public static bool AppendToValue<T, U>(this IDictionary<T, U[]> dict, ref T key, ref U value, bool preventDuplicateValues = false)
         {
-            /// <summary>
-            /// Resizes the <paramref name="array"/> then sets the last element to the <paramref name="value"/>
-            /// </summary>
-            /// <typeparam name="T"></typeparam>
-            /// <param name="array"></param>
-            /// <param name="value"></param>
-            /// <returns></returns>
-            public static T[] ResizeAndAdd<T>(T[] array, T value) => ResizeAndAdd(ref array, value);
-
-            /// <summary>
-            /// Resizes the <paramref name="array"/> then sets the last element to the <paramref name="value"/>
-            /// </summary>
-            /// <typeparam name="T"></typeparam>
-            /// <param name="array"></param>
-            /// <param name="value"></param>
-            /// <returns></returns>
-            public static T[] ResizeAndAdd<T>(ref T[] array, T value)
+            if (dict.ContainsKey(key))
             {
-                int newIndex = array.Length;
+                var arr = dict[key];
 
-                System.Array.Resize(ref array, newIndex + 1);
+                // avoid costly .Contains by using a flag if we dont care about duplicates
+                if (preventDuplicateValues && arr.Contains(value))
+                {
+                    return true;
+                }
 
-                array[newIndex] = value;
+                dict[key] = Helpers.Array.AppendValue(arr, value);
 
-                return array;
+                return true;
+            }
+            else
+            {
+                dict.Add(key, new U[] { value });
+                return false;
             }
         }
+
+        /// <summary>
+        /// Searches the dictionary for the <paramref name="key"/>, if it does not exists it creates a new <see cref="{T}[]"/> with the <paramref name="value"/> as the first entry. If the <paramref name="key"/> is found, the array is resized and the <paramref name="value"/> is added as the last element in the array.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="dict"></param>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <param name="Limiter"></param>
+        /// <returns>
+        /// <see langword="true"/> when the key was found.
+        /// <para>
+        /// </para>
+        /// <see langword="false"/> when the key was not found, but added.
+        /// </returns>
+        [DebuggerHidden]
+        public static bool AppendToValue<T, U>(this IDictionary<T, U[]> dict, T key, ref U value, bool preventDuplicateValues = false) => AppendToValue(dict, ref key, ref value, preventDuplicateValues);
+
+        /// <summary>
+        /// Searches the dictionary for the <paramref name="key"/>, if it does not exists it creates a new <see cref="{T}[]"/> with the <paramref name="value"/> as the first entry. If the <paramref name="key"/> is found, the array is resized and the <paramref name="value"/> is added as the last element in the array.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="dict"></param>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <param name="Limiter"></param>
+        /// <returns>
+        /// <see langword="true"/> when the key was found.
+        /// <para>
+        /// </para>
+        /// <see langword="false"/> when the key was not found, but added.
+        /// </returns>
+        [DebuggerHidden]
+        public static bool AppendToValue<T, U>(this IDictionary<T, U[]> dict, ref T key, U value, bool preventDuplicateValues = false) => AppendToValue(dict, ref key, ref value, preventDuplicateValues);
+
+        /// <summary>
+        /// Searches the dictionary for the <paramref name="key"/>, if it does not exists it creates a new <see cref="{T}[]"/> with the <paramref name="value"/> as the first entry. If the <paramref name="key"/> is found, the array is resized and the <paramref name="value"/> is added as the last element in the array.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="dict"></param>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <param name="Limiter"></param>
+        /// <returns>
+        /// <see langword="true"/> when the key was found.
+        /// <para>
+        /// </para>
+        /// <see langword="false"/> when the key was not found, but added.
+        /// </returns>
+        [DebuggerHidden]
+        public static bool AppendToValue<T, U>(this IDictionary<T, U[]> dict, T key, U value, bool preventDuplicateValues = false) => AppendToValue(dict, ref key, ref value, preventDuplicateValues);
     }
 }

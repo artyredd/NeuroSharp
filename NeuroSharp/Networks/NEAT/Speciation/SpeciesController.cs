@@ -24,11 +24,11 @@ namespace NeuroSharp.NEAT
         /// <summary>
         /// The threashold at which a individual network is considered a different species when compared to another network.
         /// </summary>
-        public double CompatibilityThreashold { get; set; } = 1.0f;
+        public double CompatibilityThreashold { get; set; } = 3.0f;
 
         public INeatNetwork[] Generation { get; private set; } = Array.Empty<INeatNetwork>();
 
-        public INeatNetworkComparer NetworkComparer { get; set; } = new NeatNetworkComparer();
+        public INeatNetworkComparer NetworkComparer { get; set; } = new DefaultNetworkComparer();
 
         /// <summary>
         /// Holds the classification of each species. Each entry in the array is an array of integers. Where each integer represents the index of a network inside the <see cref="Generation"/> array.

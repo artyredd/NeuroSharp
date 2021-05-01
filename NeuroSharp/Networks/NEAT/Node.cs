@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace NeuroSharp.NEAT
 {
+    [Obsolete("Use INeatNetwork.NodeLayer and INeatNetwork.NodeDictionary instead")]
     public class Node : INeatNode
     {
         public ushort Id { get; init; }
@@ -29,7 +30,7 @@ namespace NeuroSharp.NEAT
                 return _Hash;
             }
 
-            _Hash = Hasher.Hash(this);
+            //_Hash = Hasher.Hash(this);
 
             return _Hash;
         }

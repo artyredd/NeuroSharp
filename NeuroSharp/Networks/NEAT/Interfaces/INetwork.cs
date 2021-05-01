@@ -1,4 +1,6 @@
-﻿namespace NeuroSharp.NEAT
+﻿using System.Threading.Tasks;
+
+namespace NeuroSharp.NEAT
 {
     /// <summary>
     /// Defines a Neural Network with basic methods and information for general use
@@ -9,23 +11,27 @@
     /// </typeparam>
     public interface INetwork<T, U>
     {
-        int InputNodeCount { get; }
+        string Name { get; }
+        int InputNodes { get; }
 
-        int OutputNodeCount { get; }
+        int OutputNodes { get; }
+
+        int Count { get; }
 
         IEvaluator<U, T, U> Evaluator { get; init; }
+
         /// <summary>
         /// Take the provided data and runs it through the network and returns the result.
         /// </summary>
         /// <param name="Data"></param>
         /// <returns></returns>
-        T Evaluate(T Data);
+        Task<T> Evaluate(T Data);
 
         /// <summary>
         /// Evaluates the data, runs the result through the <see cref="IFitnessFunction{U, T}"/> in the <see cref="Evaluator"/> and returns the result.
         /// </summary>
         /// <param name="Data"></param>
         /// <returns></returns>
-        U EvaluateWithFitness(T Data);
+        Task<U> EvaluateWithFitness(T Data);
     }
 }

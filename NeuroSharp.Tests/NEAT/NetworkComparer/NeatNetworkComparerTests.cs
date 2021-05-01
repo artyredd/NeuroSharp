@@ -10,7 +10,7 @@ namespace NeuroSharp.Tests
 {
     public class NeatNetworkComparerTests
     {
-        static readonly NeatNetworkComparer comparer = new();
+        static readonly DefaultNetworkComparer comparer = new();
 
         [Fact]
         public void AlignGenomesWorks()
@@ -18,11 +18,7 @@ namespace NeuroSharp.Tests
             // create two networks that are the same and create a connection between them
             NeatNueralNetwork left = new(1, 1);
 
-            ((DefaultMutater)(left.Mutater)).AddConnection(left).Wait();
-
             NeatNueralNetwork right = new(1, 1);
-
-            ((DefaultMutater)(right.Mutater)).AddConnection(right).Wait();
 
             var aligned = comparer.AlignGenomes(left, right);
 

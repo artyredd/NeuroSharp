@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NeuroSharp.NEAT.Structs;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -11,34 +12,14 @@ namespace NeuroSharp.NEAT
 {
     public class NeatNueralNetwork : INeatNetwork, IInstantiableNetwork<INeatNetwork>
     {
-        public NeatNueralNetwork(ushort InputNodes, ushort OutputNodes)
+        public string Name { get; set; } = "";
+
+        public NeatNueralNetwork(int InputNodes, int OutputNodes)
         {
-            InputNodeCount = InputNodes;
-            OutputNodeCount = OutputNodes;
+            this.InputNodes = InputNodes;
+            this.OutputNodes = OutputNodes;
 
-            Nodes = new INeatNode[InputNodes + OutputNodes];
-
-            NextNodeNumber = 0;
-
-            Span<INeatNode> nodes = new(Nodes);
-            for (ushort i = 0; i < InputNodes; i++)
-            {
-                nodes[i] = new Node
-                {
-                    Id = i,
-                    NodeType = NodeType.Input
-                };
-                Interlocked.Increment(ref NextNodeNumber);
-            }
-            for (int i = 0; i < OutputNodes; i++)
-            {
-                nodes[i + InputNodes] = new Node
-                {
-                    Id = (ushort)(i + InputNodes),
-                    NodeType = NodeType.Output
-                };
-                Interlocked.Increment(ref NextNodeNumber);
-            }
+            this.Mutater.InitializeConnections(this);
         }
 
         public NeatNueralNetwork()
@@ -46,6 +27,9 @@ namespace NeuroSharp.NEAT
 
         }
 
+        /// <summary>
+        /// Responsible for handling the global innovations for all networks. Most notably the semantics involved with maintaining an asynchronous list of innovations across all networks.
+        /// </summary>
         public static IInnovationHandler GlobalInnovations { get; } = new InnovationHandler();
 
         /// <summary>
@@ -58,27 +42,35 @@ namespace NeuroSharp.NEAT
         /// </summary>
         public IEvaluator<double, double[], double> Evaluator { get; init; } = new DefaultEvaluator();
 
+        /// <summary>
+        /// Responsible for generating the explicit representation of the network using <see cref="Innovations"/>
+        /// </summary>
         public IPhenotypeGenerator<double> PhenotypeGenerator { get; init; } = new DefaultPhenotypeGenerator<double>();
 
         /// <summary>
-        /// The nodes that this network has evolved or started with.
+        /// The layers of this network. Each <see cref="int"/>[] at <c>n</c> index represents the nth layer of the network.
         /// <code>
-        /// Order of elements:
+        /// [0] = Output Layer
         /// </code>
-        /// Nodes:
-        /// [ <c>input nodes</c>  ... | <c>output nodes</c> ... | <c>hidden nodes</c> ... ]
+        /// <code>
+        /// [1] = Input Layer
+        /// </code>
+        /// <code>
+        /// [n] = nth Layer
+        /// </code>
+        /// <code>
+        /// Generated with <see cref="GeneratePhenotype"/>
+        /// </code>
         /// </summary>
-        public INeatNode[] Nodes
-        {
-            get { return _Nodes; }
-            set { _Nodes = value; }
-        }
+        public int[][] NodeLayers { get; private set; } = Array.Empty<int[]>();
 
-        internal Dictionary<ushort, int> NodeIndexDictionary = new();
-
-        internal SemaphoreSlim NodeIndexSemaphore = new(1, 1);
-
-        internal IInnovation[] _Innovations = Array.Empty<Innovation>();
+        /// <summary>
+        /// The nodes of this network. Key: Node Id, Value: The layer the node is contained within.
+        /// <code>
+        /// Generated with <see cref="GeneratePhenotype"/>
+        /// </code>
+        /// </summary>
+        public IDictionary<int, ushort> NodeDictionary { get; private set; }
 
         /// <summary>
         /// The innovations that this network has evolved
@@ -88,24 +80,43 @@ namespace NeuroSharp.NEAT
             get { return _Innovations; }
             set { _Innovations = value; }
         }
+        internal IInnovation[] _Innovations = Array.Empty<Innovation>();
 
         /// <summary>
         /// The number of input nodes this network was created with
         /// </summary>
-        public int InputNodeCount { get; private set; } = 0;
+        public int InputNodes { get; private set; } = 0;
 
         /// <summary>
         /// The number of ouput nodes this network was created with
         /// </summary>
-        public int OutputNodeCount { get; private set; } = 0;
+        public int OutputNodes { get; private set; } = 0;
 
-        // a list would be more convenient but this is ~5x faster
-        internal INeatNode[] _Nodes = Array.Empty<INeatNode>();
+        /// <summary>
+        /// Gets the total number of nodes in this network.
+        /// </summary>
+        public int Count => NodeDictionary?.Count ?? 0;
 
         internal volatile int NextNodeNumber = 0;
 
         internal volatile bool Dirty = true;
 
+        /// <summary>
+        /// <see langword="true"/> when any innovation has been changed in any way, such that, the topology of the network has been altered. This happens when adding nodes, adding connections, or any modification to connections or nodes.
+        /// <para>
+        /// Example:
+        /// <code>
+        /// var network = new NeatNueralNetwork(3,2);
+        /// </code>
+        /// <code>
+        /// network.AddInnovation( ... );
+        /// </code>
+        /// Outputs:
+        /// <code>
+        /// TopologyChanged: true
+        /// </code>
+        /// </para>
+        /// </summary>
         public bool TopologyChanged => Dirty;
 
         /// <summary>
@@ -115,30 +126,51 @@ namespace NeuroSharp.NEAT
 
         public INeatNetwork Create(int InputNodes, int OutputNodes) => CreateAsync(InputNodes, OutputNodes).Result;
 
-#pragma warning disable CS1998
+        /// <summary>
+        /// Creates a new INeatNetwork object with the given <paramref name="InputNodes"/> and <paramref name="OutputNodes"/> and initialized using the <see cref="IMutater.InitializeConnections(INeatNetwork)"/>
+        /// </summary>
+        /// <param name="InputNodes"></param>
+        /// <param name="OutputNodes"></param>
+        /// <returns></returns>
         public async Task<INeatNetwork> CreateAsync(int InputNodes, int OutputNodes)
         {
+            // create the default connections
+            // per the specs all input nodes must connection to all output nodes
+            await Mutater.InitializeConnections(this);
+
             return new NeatNueralNetwork((ushort)InputNodes, (ushort)OutputNodes);
         }
-#pragma warning restore CS1998
 
-        public bool TryGetIndex(ushort NodeId, out int index)
+        /// <summary>
+        /// Creates a new INeatNetwork object with the given <paramref name="InputNodes"/> and <paramref name="OutputNodes"/> and initialized using the <see cref="IMutater.InitializeConnections(INeatNetwork)"/>
+        /// </summary>
+        /// <param name="InputNodes"></param>
+        /// <param name="OutputNodes"></param>
+        /// <returns></returns>
+        public async Task<INeatNetwork> CreateAsync(int InputNodes, int OutputNodes, IInnovation[] Genome)
         {
-            NodeIndexSemaphore.Wait();
-            try
+            INeatNetwork newNetwork = new NeatNueralNetwork()
             {
-                if (NodeIndexDictionary.ContainsKey(NodeId))
+                InputNodes = InputNodes,
+                OutputNodes = OutputNodes,
+                Dirty = true
+            };
+
+            // import the innovations
+            for (int i = 0; i < Genome.Length; i++)
+            {
+                string hash = Genome[i].Hash();
+                if (newNetwork.InnovationHashes.Add(hash))
                 {
-                    index = NodeIndexDictionary[NodeId];
-                    return true;
+                    await newNetwork.AddInnovation(Genome[i]);
                 }
-                index = default;
-                return false;
             }
-            finally
-            {
-                NodeIndexSemaphore.Release();
-            }
+
+            newNetwork.GeneratePhenotype();
+
+            await Helpers.Sleep();
+
+            return newNetwork;
         }
 
         /// <summary>
@@ -148,201 +180,27 @@ namespace NeuroSharp.NEAT
         /// </code>
         /// </summary>
         /// <returns></returns>
-        //public void GeneratePhenotype()
-        //{
-        //    // avoid unecessary and very performance costly genotype generation
-        //    if (Dirty is false)
-        //    {
-        //        return;
-        //    }
+        public void GeneratePhenotype()
+        {
+            if (Dirty is false)
+            {
+                return;
+            }
 
-        //    // mark ourselfs as having regenerated our structure
-        //    Dirty = false;
+            Dirty = false;
 
-        //    // we should generate the phenotype from innovations alone
+            // decode the genome into several dictionaries that will help with constructing the matrices that are used for evaluation
+            DecodedGenome concurrentDict = PhenotypeGenerator.DecodeGenome(this);
 
-        //    /*
-        //        Innovation scheme:
+            // store the dictionary for fast lookup of node layers
+            this.NodeDictionary = concurrentDict.NodeDictionary;
 
-        //          innovation id(#)
-        //            from -> to
-        //              Weight
-        //             ENABLED
+            // derive the layers from the dictionary
+            this.NodeLayers = PhenotypeGenerator.GetLayers(ref concurrentDict);
 
-        //    */
-        //    // Key = the id of the node that sends to int[] nodes
-        //    Dictionary<int, int[]> Senders = new();
-
-        //    // Key = the id of the node that receives from int[] nodes
-        //    Dictionary<int, int[]> Recipients = new();
-
-        //    // Key = the id of the node, Value = the int layer the node is in
-        //    // 0 = output layer
-        //    // 1 = input layer
-        //    // > 1 Hidden node layers
-        //    Dictionary<int, int> LayerDict = new();
-
-        //    // the value the id of a node must be less than to be either an input or output node
-        //    int mustBeInputOrOutputThreashold = InputNodeCount + OutputNodeCount;
-
-        //    void AddRecipientToSender(int node, int recipient) => Senders.AddValueToArray(node, recipient);
-
-        //    void AddSenderToRecipient(int node, int sender) => Recipients.AddValueToArray(node, sender);
-
-        //    void SetLayer(int node, int layer)
-        //    {
-        //        if (LayerDict.ContainsKey(node) is false)
-        //        {
-        //            LayerDict.Add(node, layer);
-        //            return;
-        //        }
-        //        LayerDict[node] = layer;
-        //    }
-
-        //    // keep track of which nodes need further computation to figure out their exact layer, so we can avoid unessesary complexity
-        //    int[] hiddenNodes = Array.Empty<int>();
-        //    NodeType GetAndStoreNodeType(int nodeId)
-        //    {
-        //        if (nodeId < mustBeInputOrOutputThreashold)
-        //        {
-        //            // check to see if it's an output node
-        //            // node array scheme is always input, output, hidden ...
-        //            // layer scheme is 0= outputm 1 = input 1+ hidden
-        //            if (nodeId >= InputNodeCount)
-        //            {
-        //                // must be output node
-        //                SetLayer(nodeId, 0);
-        //                return NodeType.Output;
-        //            }
-        //            else
-        //            {
-        //                // must be input node
-        //                SetLayer(nodeId, 1);
-        //                return NodeType.Input;
-        //            }
-        //        }
-
-        //        // add to the hiddenNodes array so we can figure out it's actual layer later
-        //        Extensions.Array.ResizeAndAdd(ref hiddenNodes, nodeId);
-
-        //        return NodeType.Hidden;
-        //    }
-
-        //    // iterate through the innovations list and record where every node sends to and every node receives from
-        //    Span<IInnovation> innovations = new(_Innovations);
-
-        //    // ~ O(n)
-        //    for (int i = 0; i < innovations.Length; i++)
-        //    {
-        //        ref IInnovation inn = ref innovations[i];
-
-        //        // only enabled genes show up in the phenotype
-        //        if (inn.Enabled is false)
-        //        {
-        //            continue;
-        //        }
-
-        //        // record where the 'from' node sends to
-        //        AddRecipientToSender(inn.InputNode, inn.OutputNode);
-
-        //        // records where the 'to' receives from
-        //        AddSenderToRecipient(inn.OutputNode, inn.InputNode);
-
-        //        // determine if the node is an input, output, or hidden node, store that value
-        //        GetAndStoreNodeType(inn.InputNode);
-        //        GetAndStoreNodeType(inn.OutputNode);
-        //    }
-
-        //    int GetAndSetHiddenLayer(int hiddenNodeId)
-        //    {
-        //        // first check to see if we have already calculated the layer
-        //        if (LayerDict.ContainsKey(hiddenNodeId))
-        //        {
-        //            return LayerDict[hiddenNodeId];
-        //        }
-        //        // rules for finding the exact layer for the node
-        //        /*
-        //            if all of the nodes it receives from are input nodes, it's layer is 2 (1 above the input layer)
-        //            if ANY od the nodes it receives from are hidden nodes, it's layer is above 2
-        //                -> if child has an entry the parent hidden node's layer is the child nodes layer + 1
-        //                -> if child doesn't have an entry, recurse until a all nodes received from are input nodes
-        //        */
-
-        //        // i could do a check to make sure the key exists, but it SHOULD exist by now, and if it doesn't it should throw an error because something is wrong
-        //        Span<int> nodesReceivedFrom = new(Recipients[hiddenNodeId]);
-
-        //        // this represents what layer all of the children are in, when this is layer 2(1 above input layer) the the highest layer is 1 and our layer is that + 1
-        //        // when any of our children are hidden we should get their height in the network recursively as well and record their height here. We will always be +1 to our highest child in the network
-        //        int HighestLayerOfChildren = 1;
-
-        //        // iterate through all fo the nodes that provide to this node and check if they are all input nodes
-        //        for (int i = 0; i < nodesReceivedFrom.Length; i++)
-        //        {
-        //            ref int id = ref nodesReceivedFrom[i];
-
-        //            // check to see if we have already found the layer of the child node
-        //            if (LayerDict.ContainsKey(id))
-        //            {
-        //                // if the layer dict contains the key it means the id is either a input or an output node, or a hidden node that has already recursively found it's layer, make sure its not 0, since that would be an output node and that would be a circular reference and break everything
-        //                if (LayerDict[id] >= 1)
-        //                {
-        //                    // since this is a hidden node we should make sure we keep track of it's height since our height will be the highest child + 1
-        //                    if (LayerDict[id] > HighestLayerOfChildren)
-        //                    {
-        //                        // since it's larger set our largest child to that + 1
-        //                        HighestLayerOfChildren = LayerDict[id];
-        //                    }
-        //                }
-        //                else
-        //                {
-        //                    int id_ByValue = id;
-        //                    // a node should not be able to 'receieve input' from an output node (in this context at least) - for cyclical DAGs and networks
-        //                    // they should implement a cycle that is not explicitly represented in the innovation genome. idk tho i never went to college
-        //                    throw Networks.Exceptions.CircularInnovationReference(Innovations.Where(x => x.Id == id_ByValue).FirstOrDefault());
-        //                }
-        //            }
-        //            else
-        //            {
-        //                // if we werent able to find the node in the dict we should recursively check to see if all their children are inputs, and if they are
-        //                // our layer would be 1 above theirs(or the highest child in our tree)
-        //                int val = GetAndSetHiddenLayer(id);
-
-        //                // check to see if they are taller than all the rest of our children
-        //                if (val > HighestLayerOfChildren)
-        //                {
-        //                    HighestLayerOfChildren = val;
-        //                }
-        //            }
-        //        }
-
-        //        // at this point either all of the nodes we receive from were input nodes (HighestLayer of 1) or we found the tallest child
-        //        // our height is always + 1 to the tallest node we recieve from
-
-        //        // set our layer in the dictionary
-
-        //        HighestLayerOfChildren += 1;
-
-        //        SetLayer(hiddenNodeId, HighestLayerOfChildren);
-
-        //        // return so we recurse properly
-        //        return HighestLayerOfChildren;
-        //    }
-
-        //    // O(i * n)
-        //    // go through the hidden and find their exact layer
-        //    Span<int> hiddenSpan = new(hiddenNodes);
-        //    for (int i = 0; i < hiddenSpan.Length; i++)
-        //    {
-        //        GetAndSetHiddenLayer(hiddenSpan[i]);
-        //    }
-
-        //    // now that we have what our input nodes, output nodes, and hidden nodes are and their exact location we can construct the matrix to represent the data
-        //}
-
-        public void GeneratePhenotype() => PhenotypeGenerator.GenerateMatrices(this);
-
-        public ushort IncrementNodeCount() => (ushort)Interlocked.Increment(ref NextNodeNumber);
-        public ushort DecrementNodeCount() => (ushort)Interlocked.Decrement(ref NextNodeNumber);
+            // get the largest node id contained within innovations so we can reset the nextNodeNumber
+            Interlocked.Add(ref NextNodeNumber, GetLargestNodeId() - NextNodeNumber);
+        }
 
         public async Task<MutationResult> Mutate() => await Mutater.Mutate(this);
 
@@ -357,9 +215,9 @@ namespace NeuroSharp.NEAT
         /// </summary>
         /// <param name="Data"></param>
         /// <returns></returns>
-        public double[] Evaluate(double[] Data)
+        public async Task<double[]> Evaluate(double[] Data)
         {
-            VerifyNetworkBeforeEvaluation(ref Data);
+            await VerifyNetworkBeforeEvaluation(Data);
 
             // this is by default a recursive function, may need a refactor for performance reasons (if there are any)
 
@@ -371,41 +229,32 @@ namespace NeuroSharp.NEAT
         /// </summary>
         /// <param name="Data"></param>
         /// <returns></returns>
-        public double EvaluateWithFitness(double[] Data)
+        public async Task<double> EvaluateWithFitness(double[] Data)
         {
-            VerifyNetworkBeforeEvaluation(ref Data);
+            await VerifyNetworkBeforeEvaluation(Data);
 
             return Evaluator.EvaluateWithFitness(Data, this);
         }
 
-        internal void VerifyNetworkBeforeEvaluation(ref double[] Data)
+        internal async Task VerifyNetworkBeforeEvaluation(double[] Data)
         {
-            if (Data?.Length is null or 0 || Data.Length != InputNodeCount)
+            if (Data?.Length is null or 0 || Data.Length != InputNodes)
             {
-                throw Networks.Exceptions.InconsistentTrainingDataScheme(InputNodeCount, Data.Length);
+                throw Networks.Exceptions.InconsistentTrainingDataScheme(InputNodes, Data.Length);
             }
 
             // make sure out structure has not changed
             if (Dirty)
             {
-
                 GeneratePhenotype();
             }
+
+            // placeholder for real async stuff
+            await Helpers.Sleep();
         }
 
         /// <summary>
-        /// Resizes the node array and adds the given node to the end of the array.
-        /// </summary>
-        /// <param name="node"></param>
-        public void AddNode(INeatNode node)
-        {
-            Extensions.Array.ResizeAndAdd(ref _Nodes, node);
-
-            Dirty = true;
-        }
-
-        /// <summary>
-        /// Gets an id from the <see cref="GlobalInnovations"/>, sets the provided's <see cref="IInnovation.Id"/>, resizes the <see cref="Nodes"/> array, and sets the last element to the <paramref name="innovation"/>
+        /// Gets an id from the <see cref="GlobalInnovations"/>, sets the provided's <see cref="IInnovation.Id"/>, resizes the <see cref="Innovations"/> array, and sets the last element to the <paramref name="innovation"/>
         /// </summary>
         /// <param name="innovation"></param>
         /// <returns></returns>
@@ -416,9 +265,58 @@ namespace NeuroSharp.NEAT
             innovation.Id = await GlobalInnovations.Add(innovation);
 
             // resize the backing array for the innovations to accomodate the new innovation
-            Extensions.Array.ResizeAndAdd(ref _Innovations, innovation);
+            Helpers.Array.AppendValue(ref _Innovations, ref innovation);
 
             Dirty = true;
+        }
+
+        public ushort IncrementNextNodeId()
+        {
+            // explicit casting w/ boxing was ~3x faster than using an actual Ushort with semaphore and 2x faster than using traditional object locking
+            return (ushort)Interlocked.Increment(ref NextNodeNumber);
+        }
+
+        public ushort DecrementNextNodeId()
+        {
+            // explicit casting w/ boxing was ~3x faster than using an actual Ushort with semaphore and 2x faster than using traditional object locking
+            return (ushort)Interlocked.Decrement(ref NextNodeNumber);
+        }
+
+        private int GetLargestNodeId()
+        {
+            Span<IInnovation> innovations = new(_Innovations);
+            ushort largestId = 0;
+            for (int i = 0; i < innovations.Length; i++)
+            {
+                if (innovations[i].InputNode > largestId)
+                {
+                    largestId = innovations[i].InputNode;
+                }
+                if (innovations[i].OutputNode > largestId)
+                {
+                    largestId = innovations[i].OutputNode;
+                }
+            }
+            return largestId;
+        }
+
+        public void Reset()
+        {
+            InnovationHashes?.Clear();
+
+            NodeDictionary?.Clear();
+
+            NodeLayers = Array.Empty<int[]>();
+
+            _Innovations = Array.Empty<IInnovation>();
+
+            Dirty = true;
+
+            NextNodeNumber = 0;
+
+            Interlocked.Add(ref NextNodeNumber, InputNodes);
+
+            Interlocked.Add(ref NextNodeNumber, OutputNodes);
         }
     }
 }

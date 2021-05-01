@@ -16,55 +16,26 @@ namespace NeuroSharp.Tests
             var nn = new NeatNueralNetwork(3, 2);
 
             // both arrays should be instantiated when the constructor is called
-            Assert.NotNull(nn.Nodes);
             Assert.NotNull(nn.Innovations);
-        }
-        [Fact]
-        public void AddNodeToGenomeWorks()
-        {
-            var nn = new NeatNueralNetwork(3, 2);
-            var node = new NeuroSharp.NEAT.Node()
-            {
-                Id = 12
-            };
-
-            Assert.True(nn.Nodes.Length == 5);
-
-            nn.AddNode(node);
-
-            Assert.True(nn.Nodes.Length == 6);
-
-            Assert.Equal(node.Id, nn.Nodes[5].Id);
         }
 
         [Fact]
         public void AddLocalAndGlobalInnovation()
         {
-            // since these are static and the tests are multi-threaded we should clear previous values so this test remains accurate
-            var nn = new NeatNueralNetwork(3, 2);
-
             NeatNueralNetwork.GlobalInnovations.Clear().Wait();
-
-            Assert.Empty(nn.Innovations);
 
             Assert.Empty(NeatNueralNetwork.GlobalInnovations.InnovationHashes);
 
             Assert.Empty(NeatNueralNetwork.GlobalInnovations.Innovations);
 
-            var innovation = new Innovation()
-            {
-                InputNode = 0,
-                OutputNode = 3,
-                Weight = 2.0f,
-                Enabled = true,
-            };
+            // since these are static and the tests are multi-threaded we should clear previous values so this test remains accurate
+            var nn = new NeatNueralNetwork(3, 2);
 
-            nn.AddInnovation(innovation).Wait();
 
-            Assert.Single(NeatNueralNetwork.GlobalInnovations.InnovationHashes);
-            Assert.Single(nn.Innovations);
-            Assert.Single(NeatNueralNetwork.GlobalInnovations.Innovations);
-            Assert.Equal(1, NeatNueralNetwork.GlobalInnovations.Count());
+            Assert.Equal(3 * 2, NeatNueralNetwork.GlobalInnovations.InnovationHashes.Count);
+            Assert.Equal(3 * 2, nn.Innovations.Length);
+            Assert.Equal(3 * 2, NeatNueralNetwork.GlobalInnovations.Innovations.Count());
+            Assert.Equal(3 * 2, NeatNueralNetwork.GlobalInnovations.Count());
 
             Assert.Equal(3, nn.Innovations[0].OutputNode);
         }
@@ -100,31 +71,18 @@ namespace NeuroSharp.Tests
         [Fact]
         public void TryGetEligibleConnectionToSplit()
         {
-            var nn = new NeatNueralNetwork(3, 2);
-
-            Assert.Empty(nn.Innovations);
-
-            var inn = new Innovation()
-            {
-                Enabled = false,
-                Id = 12,
-                InputNode = 1,
-                OutputNode = 4
-            };
+            var nn = new NeatNueralNetwork(1, 1);
 
             // if there are no innovations then there should be no eligible connections to split
-            var pass = ((DefaultMutater)nn.Mutater).TryGetEligibleConnectionToSplit(out var eligibleCons, nn);
+            var pass = ((DefaultMutater)nn.Mutater).TryGetEligibleConnectionToSplit(out _, nn);
 
-            Assert.False(pass);
-            Assert.Empty(eligibleCons);
-
-            // add the innovation to global
-            nn.AddInnovation(inn).Wait();
+            // at this point the innovaiton should be enabled and eligble for splitting
+            Assert.True(pass);
 
             // if there are only disbaled connections then there are no eligible connections
             nn.Innovations[0].Enabled = false;
 
-            pass = ((DefaultMutater)nn.Mutater).TryGetEligibleConnectionToSplit(out eligibleCons, nn);
+            pass = ((DefaultMutater)nn.Mutater).TryGetEligibleConnectionToSplit(out var eligibleCons, nn);
 
             Assert.False(pass);
             Assert.Empty(eligibleCons);
@@ -140,64 +98,22 @@ namespace NeuroSharp.Tests
         }
 
         [Fact]
-        public void GetEligibleNodesForNewConnection()
-        {
-            var nn = new NeatNueralNetwork(3, 2);
-
-            var eligibleNodes = ((DefaultMutater)nn.Mutater).GetEligibleNodesForNewConnection(nn);
-
-            Assert.Equal(3, eligibleNodes.EligibleInputNodes.Length);
-
-            Assert.Equal(2, eligibleNodes.EligibleOutputNodes.Length);
-
-            // hidden nodes are eligible for both inputs and output and should count for both
-
-            var hidden = new NeuroSharp.NEAT.Node()
-            {
-                Id = 6,
-                NodeType = NodeType.Hidden
-            };
-
-            nn.AddNode(hidden);
-
-            eligibleNodes = ((DefaultMutater)nn.Mutater).GetEligibleNodesForNewConnection(nn);
-
-            Assert.Equal(4, eligibleNodes.EligibleInputNodes.Length);
-
-            Assert.Equal(3, eligibleNodes.EligibleOutputNodes.Length);
-        }
-
-        [Fact]
         public void AddNode()
         {
-            var nn = new NeatNueralNetwork(3, 2);
-            var inn = new Innovation()
-            {
-                InputNode = 2,
-                OutputNode = 3,
-                Enabled = false,
-                Weight = 1.333d,
-                Id = 0
-            };
-            // we shouldnt be able to add a node if there are no innovations
-            Assert.Equal(AddNodeResult.noEligibleConnections, ((DefaultMutater)nn.Mutater).AddNode(nn).Result);
-
-            // we shouldnt be able to split a disabled connection
-            nn.AddInnovation(inn).Wait();
-
-            Assert.Equal(AddNodeResult.noEligibleConnections, ((DefaultMutater)nn.Mutater).AddNode(nn).Result);
-
             NeatNueralNetwork.GlobalInnovations.Clear();
+
+            var nn = new NeatNueralNetwork(1, 1);
+
+            // we shouldnt be able to add a node if there are no innovations
+            Assert.Equal(AddNodeResult.success, ((DefaultMutater)nn.Mutater).AddNode(nn).Result);
 
             // when we split the connection the new node should have the same weight as the original connection, and the
             // original input node should have a weight of 1 to prevent the new topology from impacting the fittness too badly of the new
             // topolgy
 
-            nn.Innovations[0].Enabled = true;
-            Assert.Equal(AddNodeResult.success, ((DefaultMutater)nn.Mutater).AddNode(nn).Result);
+            Assert.False(nn.Innovations[0].Enabled);
 
             // make sure the innovation was properly recorded in the global innovations and the old connection was disabled
-            Assert.False(nn.Innovations[0].Enabled);
 
             Assert.Equal(3, nn.Innovations.Length);
 
@@ -209,7 +125,6 @@ namespace NeuroSharp.Tests
             Assert.True(NeatNueralNetwork.GlobalInnovations.InnovationHashes.ContainsKey(nn.Innovations[2].Hash()));
 
             // make sure the node that was created was added to the genome
-            Assert.Equal(6, nn.Nodes.Length);
         }
 
         [Fact]

@@ -1,0 +1,197 @@
+﻿
+<div class="flex">
+    <div class="btn-group" role="group" aria-label="Basic example">
+        <button type="button" class="btn btn-outline-primary" @onclick=Start>Start</button>
+        <button type="button" class="btn btn-outline-primary" @onclick=Reset>Reset</button>
+        <button type="button" class="btn btn-outline-primary" @onclick=Check>Check</button>
+        <button type="button" class="btn btn-outline-primary" @onclick=Train>Train Once</button>
+        <button type="button" class="btn btn-outline-primary" @onclick=IncreaseLR>Increase LR(@nn.TrainingRate)</button>
+        <button type="button" class="btn btn-outline-primary" @onclick=DecreaseLR>Lower LR(@nn.TrainingRate)</button>
+    </div>
+    <div class="d-flex my-2">
+        <div class="d-inline-flex mx-2">
+            <BECanvas Width=@Width Height=@Height @ref="_canvasReference"></BECanvas>
+        </div>
+        <div class="d-inline-flex mx-2">
+
+        </div>
+    </div>
+    <div class="flex border border-dark rounded rounded-0" style="max-height: 400px; overflow-y: scroll;">
+        <ul class="list-group list-group-flush">
+            @foreach (var item in console)
+            {
+                @((MarkupString)item)
+            }
+        </ul>
+    </div>
+</div>
+
+@code {
+    NeuralNetwork nn = new(2, 1, 2, 2);
+
+    public int Width = 400;
+    public int Height = 400;
+
+    Random Rng = new();
+
+    private Canvas2DContext _context;
+
+    protected BECanvasComponent _canvasReference;
+
+    List<string> console = new();
+
+    List<IMatrix<double>> TrainingDataAll = new()
+    {
+            new NeuroSharp.Double.Matrix(2, 1, new double[] { 1, 1 }),
+            new NeuroSharp.Double.Matrix(2, 1, new double[] { 0, 0 }),
+            new NeuroSharp.Double.Matrix(2, 1, new double[] { 1, 0 }),
+            new NeuroSharp.Double.Matrix(2, 1, new double[] { 0, 1 }),
+        };
+    List<IMatrix<double>> ExpectedData = new()
+    {
+            new NeuroSharp.Double.Matrix(1, 1, new double[] { 0 }),
+            new NeuroSharp.Double.Matrix(1, 1, new double[] { 0 }),
+            new NeuroSharp.Double.Matrix(1, 1, new double[] { 1 }),
+            new NeuroSharp.Double.Matrix(1, 1, new double[] { 1 }),
+        };
+
+    System.Diagnostics.Stopwatch watch = new();
+
+    private enum MsgType
+    {
+        none,
+        warning,
+        error,
+        success
+    }
+
+    private void Log(string msg, MsgType msgType = MsgType.none)
+    {
+        switch (msgType)
+        {
+            case MsgType.none:
+                console.Insert(0, $"<li class=\"list-group-item\">{watch.ElapsedMilliseconds}ms:\t{msg}</li>");
+                break;
+            case MsgType.warning:
+                console.Insert(0, $"<li class=\"list-group-item list-group-item-warning\">{watch.ElapsedMilliseconds}ms:\t{msg}</li>");
+                break;
+            case MsgType.error:
+                console.Insert(0, $"<li class=\"list-group-item list-group-item-danger\">{watch.ElapsedMilliseconds}ms:\t{msg}</li>");
+                break;
+            case MsgType.success:
+                console.Insert(0, $"<li class=\"list-group-item list-group-item-success\">{watch.ElapsedMilliseconds}ms:\t{msg}</li>");
+                break;
+        }
+    }
+
+    private async Task Batch(params Task[] awaitables)
+    {
+        await _context.BeginBatchAsync();
+
+        foreach (var item in awaitables)
+        {
+            await item;
+        }
+
+        await _context.EndBatchAsync();
+    }
+
+    private async Task Start()
+    {
+        await _context.BeginBatchAsync();
+
+        await Batch(
+            _context.SetFillStyleAsync("rgb(200, 0, 0)"),
+            _context.FillRectAsync(10, 10, 50, 50),
+            _context.SetFillStyleAsync("rgba(0, 0, 200, 0.5"),
+            _context.FillRectAsync(30, 30, 50, 50)
+        );
+
+        Log("Start", MsgType.success);
+    }
+
+    private void IncreaseLR()
+    {
+        nn.TrainingRate *= 1.25;
+        Log($"Increased learning rate to: {nn.TrainingRate}");
+    }
+
+    private void DecreaseLR()
+    {
+        nn.TrainingRate *= 0.75;
+        Log($"Decreased learning rate to: {nn.TrainingRate}");
+    }
+
+    private async Task Reset()
+    {
+        nn = new(2, 1, 2);
+        await Batch(_context.ClearRectAsync(0, 0, Width, Height));
+        Log("Reset Neural Network", MsgType.warning);
+    }
+
+    private void Train()
+    {
+
+        IMatrix<double> _0_1 = nn.CheckInput(new double[] { 0, 1 });
+        IMatrix<double> _1_1 = nn.CheckInput(new double[] { 1, 1 });
+        IMatrix<double> _1_0 = nn.CheckInput(new double[] { 1, 0 });
+        IMatrix<double> _0_0 = nn.CheckInput(new double[] { 0, 0 });
+
+        for (int i = 0; i < 100; i++)
+        {
+            int index = Rng.Next(0, 4);
+            nn.TrainingInput(TrainingDataAll[index], ExpectedData[index]);
+        }
+
+        IMatrix<double> _0_1_post = nn.CheckInput(new double[] { 0, 1 });
+        IMatrix<double> _1_1_post = nn.CheckInput(new double[] { 1, 1 });
+        IMatrix<double> _1_0_post = nn.CheckInput(new double[] { 1, 0 });
+        IMatrix<double> _0_0_post = nn.CheckInput(new double[] { 0, 0 });
+
+        bool _0_1_sin = _0_1_post[0, 0] - _0_1[0, 0] > 0;
+        bool _1_1_sin = _1_1_post[0, 0] - _1_1[0, 0] > 0;
+        bool _0_0_sin = _0_0_post[0, 0] - _0_0[0, 0] > 0;
+        bool _1_0_sin = _1_0_post[0, 0] - _1_0[0, 0] > 0;
+
+        Log($"Trained Before: [0,1]:{_0_1_post[0, 0]}({(_0_1_sin ? "+" : "-")}) [1,0]:{_1_0_post[0, 0]}({(_1_0_sin ? "+" : "-")}) [0,0]:{_0_0_post[0, 0]}({(_0_0_sin ? "+" : "-")}) [1,1]:{_1_1_post[0, 0]}({(_1_1_sin ? "+" : "-")})", MsgType.warning);
+    }
+
+    private async Task Check()
+    {
+        int pixel = 20;
+        int w = Width / pixel;
+        int h = Height / pixel;
+
+        Log($"Canvas: {Width}x{Height} Pixel: {pixel} Pixels: {w}x{h}");
+
+        await _context.BeginBatchAsync();
+        for (int i = 0; i < pixel; i++)
+        {
+            for (int j = 0; j < pixel; j++)
+            {
+                await Task.Run(() =>
+                {
+                    double x = i * w;
+                    double y = j * h;
+                    IMatrix<double> check = nn.CheckInput(new double[] { x / Width, y / Height });
+                    var val = (int)(check[0, 0] * 255);
+                    _context.SetFillStyleAsync($"rgb({val}, {val}, {val})");
+                    _context.FillRectAsync(x, y, w, h);
+                });
+            }
+        }
+        await _context.EndBatchAsync();
+        Log("Finished Drawing Check", MsgType.none);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            watch.Start();
+
+            nn.TrainingRate = 0.05;
+            this._context = await this._canvasReference.CreateCanvas2DAsync();
+        }
+    }
+}
