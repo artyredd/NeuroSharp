@@ -7,33 +7,86 @@ using System.Threading.Tasks;
 namespace NeuroSharp.NEAT
 {
     /// <summary>
+    /// Represents an <see cref="Action{T1}"/> that accepts and mutates a by-reference <typeparamref name="T"/>
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="value"></param>
+    /// <returns></returns>
+    public delegate U ReferenceAction<T, U>(ref T value);
+
+    /// <summary>
     /// The default fitness function just averages the outputs and returns the averaged results. Fitness function should be assigned a less arbitrary class for advanced problems. Or not assigned for simpler problems like game decisions.
     /// </summary>
     public class DefaultFitnessFunction : IFitnessFunction<double[], double>
     {
-        public double CheckFitness(double[] Result)
+        public Span<double> CalculateFitnesses(double[] OrginismEvaluationResults, ReferenceAction<double, double[]> ActionThatCalculatesFitness)
         {
-            return AverageDoubleArray(Result);
-        }
-
-#pragma warning disable CS1998
-        public async Task<double> CheckFitnessAsync(double[] Result)
-        {
-            return AverageDoubleArray(Result);
-        }
-
-        internal double AverageDoubleArray(double[] Inputs)
-        {
-            double average = 0d;
-
-            Span<double> nums = new(Inputs);
-            for (int i = 0; i < nums.Length; i++)
+            Span<double> results = new(OrginismEvaluationResults);
+            for (int i = 0; i < results.Length; i++)
             {
-                average += nums[i];
+                ActionThatCalculatesFitness(ref results[i]);
+            }
+            return results;
+        }
+
+        public double CalculateFitnesses(double[] OrginismEvaluationResults, ReferenceAction<double[], double> ActionThatCalculatesFitness)
+        {
+            return ActionThatCalculatesFitness(ref OrginismEvaluationResults);
+        }
+
+        public Span<double> AdjustSpeciesFitnesses(ref Span<double> fitnesses)
+        {
+            // the adjusted fitness of any organism is (or reduces to) fitness/population size
+            // pg 12 https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.28.5457&rep=rep1&type=pdf
+            int populationSize = fitnesses.Length;
+
+            double AdjustFitness(ref double fitness)
+            {
+                return fitness / populationSize;
             }
 
-            return average / nums.Length;
+            for (int i = 0; i < populationSize; i++)
+            {
+                ref double fitness = ref fitnesses[i];
+                fitness = AdjustFitness(ref fitness);
+            }
+
+            return fitnesses;
+        }
+
+        public Span<double> AdjustSpeciesFitnesses(double[] SpeciesFitnesses)
+        {
+            // the adjusted fitness of any organism is (or reduces to) fitness/population size
+            // pg 12 https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.28.5457&rep=rep1&type=pdf
+            Span<double> fitnesses = new(SpeciesFitnesses);
+            return AdjustSpeciesFitnesses(ref fitnesses);
+        }
+
+        public double[] GetProportionalFitnesses(double[] SummedSpeciesFitnesses)
+        {
+            Span<double> fitnesses = new(SummedSpeciesFitnesses);
+
+            // get the total fitnesses for all the species
+            double total = SumDoubleSpan(ref fitnesses);
+
+            // adjust each value so that it's proportional to it's overall worth compared to the total
+            for (int i = 0; i < fitnesses.Length; i++)
+            {
+                ref double fitness = ref fitnesses[i];
+                fitness /= total;
+            }
+
+            return fitnesses.ToArray();
+        }
+
+        internal double SumDoubleSpan(ref Span<double> numbers)
+        {
+            double sum = 0d;
+            for (int i = 0; i < numbers.Length; i++)
+            {
+                sum += numbers[i];
+            }
+            return sum;
         }
     }
-#pragma warning restore CS1998
 }

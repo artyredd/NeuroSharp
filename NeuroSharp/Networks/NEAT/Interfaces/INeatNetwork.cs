@@ -11,6 +11,8 @@ namespace NeuroSharp.NEAT
 
         int[][] NodeLayers { get; }
 
+        IMatrix<double>[] Matrices { get; }
+
         IDictionary<int, ushort> NodeDictionary { get; }
 
         HashSet<string> InnovationHashes { get; }

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
+using System.Diagnostics;
 namespace NeuroSharp
 {
     /// <summary>
@@ -138,6 +138,17 @@ namespace NeuroSharp
         public int CompareTo(object other, IComparer comparer) => ((IStructuralComparable)_Matrix).CompareTo(other, comparer);
 
         public bool Equals(object other, IEqualityComparer comparer) => ((IStructuralEquatable)_Matrix).Equals(other, comparer);
+
+        public override string ToString()
+        {
+            string[] str = new string[_Matrix.Length];
+
+            for (int i = 0; i < _Matrix.Length; i++)
+            {
+                str[i] = string.Format(" {0} ", string.Join(" ", _Matrix[i]));
+            }
+            return $" {Rows}x{Columns} |{string.Join(" | ", str)}|";
+        }
 
         public int GetHashCode(IEqualityComparer comparer) => ((IStructuralEquatable)_Matrix).GetHashCode(comparer);
 

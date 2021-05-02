@@ -48,5 +48,18 @@ namespace NeuroSharp.Networks
         {
             return new StackOverflowException($"Circular innovation Id({innovationId}). Innovations can not input from nodes above them in the network or output to nodes that are below them in the network.");
         }
+
+        /// <summary>
+        /// Returns exception:
+        /// <code>
+        /// Node (1) Supposedly has a weight referencing OutputNode(2) but no innovation was found in the decoded genome.
+        /// </code>
+        /// </summary>
+        /// <param name="innovation"></param>
+        /// <returns></returns>
+        public static Exception MissingInnovationEntry(int inputNode, int outputNode)
+        {
+            return new KeyNotFoundException($"Node ({inputNode}) Supposedly has a weight referencing OutputNode({outputNode}) but no innovation was found in the decoded genome.");
+        }
     }
 }

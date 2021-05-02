@@ -188,6 +188,7 @@ namespace NeuroSharp.NEAT
 
             IDictionary<int/* Node Id */, ushort/* Layer It's In */> NodeDict = new Dictionary<int, ushort>();
             IDictionary<ushort/* Layer */, int[]/* Nodes in layer */> LayerDict = new Dictionary<ushort, int[]>();
+            IDictionary<string /*Innovation Hash*/, IInnovation> InnovationDict = new Dictionary<string, IInnovation>();
 
             // setup the delegates we will use to quickly determine and complete actions on nodes depending on the type of node they are
             // the index where that any n node thereafter is input + output
@@ -238,6 +239,13 @@ namespace NeuroSharp.NEAT
             {
                 ref IInnovation inn = ref innovationSpan[i];
 
+                string hash = inn.Hash();
+
+                if (InnovationDict.ContainsKey(hash) is false)
+                {
+                    InnovationDict.Add(hash, inn);
+                }
+
                 // only enabled genes show up in the phenotype UNLESS they are input or output nodes, those are always included
                 if (inn.Enabled is false)
                 {
@@ -280,7 +288,8 @@ namespace NeuroSharp.NEAT
                 LayerDictionary = LayerDict,
                 NodeDictionary = NodeDict,
                 ReceieverDictionary = Receivers,
-                SenderDictionary = Senders
+                SenderDictionary = Senders,
+                InnovationDictionary = InnovationDict
             };
         }
 
@@ -366,31 +375,127 @@ namespace NeuroSharp.NEAT
                 int nextLayer = (layer + 1) % Layers.Length;
                 // calculate the height and width of the matrix needed
 
+                // get contiguous memory for the current layer's nodes, the next layers nodes and the nodes we need to 'forward' to the next layer
+                //Span<int> currentNodes = new(Layers[layer]);
+
+                Span<int> nextNodes = new(Layers[nextLayer]);
+
+                Span<int> forwardNodes = new(nodesToForward[layer - 1]);
+
+                int[] currentLayer = Layers[layer];
+
+                // we should check the last layer and determine if there were any forwarded nodes that we should add as a column at the end
+                if (currentMatrix >= 1)
+                {
+                    Span<int> previouslyForwardedNodes = new(nodesToForward[layer - 2]);
+                    // if there are any nodes in there we should consider them as additional nodes in our columns
+                    for (int i = 0; i < previouslyForwardedNodes.Length; i++)
+                    {
+                        Helpers.Array.AppendValue(ref currentLayer, ref previouslyForwardedNodes[i]);
+                    }
+                }
+
+                Span<int> currentNodes = new(currentLayer);
+
+
                 // default to the number of nodes in the next layer
-                int rows = Layers[nextLayer].Length + nodesToForward[layer - 1].Length;
+                int rows = nextNodes.Length + forwardNodes.Length;
 
                 // the number of columns of the matrix is EITHER the rows of the last matrix OR the number of nodes in this layer, whichever is greater
                 // normally the number of rows in the last matrix is always = to the number of columns of this one so they can be multiplied, however
                 // becuase values that are not used in a given layer have their values 'forwarded' until they need them, the size might not match up naturally
-
-                int columns = Layers[layer].Length;
-
-                // make sure that we account for forwarded values from the last matrix
-                if (currentMatrix > 1)
-                {
-                    // if we are not the first matrix we should check the rows of the last matrix and make sure we dont need more room
-                    int lastMatrixRows = matrices[currentMatrix - 1].Rows;
-                    if (lastMatrixRows != columns)
-                    {
-                        columns = lastMatrixRows;
-                    }
-                }
+                int columns = currentNodes.Length;
 
                 // add the created matrix to the array
-                matrices[currentMatrix] = new Double.Matrix(rows, columns);
+                matrices[currentMatrix] = CreateMatrix(rows, columns, ref currentNodes, ref nextNodes, ref forwardNodes, ref genome);
             }
 
             return matrices;
+        }
+
+        internal IMatrix<double> CreateMatrix(int rows, int columns, ref Span<int> CurrentLayer, ref Span<int> NextLayer, ref Span<int> ForwardedNodes, ref DecodedGenome genome)
+        {
+            // to construct a matrix so that the matrix generated can be used to propogate fowards to the next layer the rows must match the number of nodes in the next layer plus the number of forwarded nodes
+            // create a span for the new matrix
+            double[] weightArray = new double[rows * columns];
+
+            // carve out some memory to store the weights
+            Span<double> weights = new(weightArray);
+
+            // we're going to store the weights in once dimension and let the matrix construct the matrix for us
+            // array scheme is as follows:
+            // where any row is i * columns
+            // where any value is row + i
+            // row 1 column 1 is 1 * 3 = 3 + 1 = 4 arr[4] = w5 = row 1 col 1
+            // double[] = { w1, w2, w3, w4, w5, w6 }
+            //      =
+            //   columns
+            // | w1 w2 w3 | rows
+            // | w4 w5 w6 |
+
+            // to construct the weight we iterate row by row
+            // each row is intended to calcuate the weighted sum for any particular node in the next layer
+            // OR to forward the value of a node to the next layer
+            // to forward a value we multiply all weights by 0 in a row except the value intending to be forwarded
+            // forwarded values are always at the end of the matrix(technically it can be arbitrarily places within the matrix, however, this would be difficult to debug i imagine)
+
+            void SetWeight(ref Span<double> array, ref int row, ref int column, double weight)
+            {
+                array[(row * columns) + column] = weight;
+            }
+
+            // start by getting the weights for all next layers nodes
+            for (int nextLayerIndex = 0; nextLayerIndex < NextLayer.Length; nextLayerIndex++)
+            {
+                ref int nextLayerNode = ref NextLayer[nextLayerIndex];
+                // go to each current layer node and check to see if it has weights for the node we are currently on
+                for (int currentLayerIndex = 0; currentLayerIndex < CurrentLayer.Length; currentLayerIndex++)
+                {
+                    ref int currentNode = ref CurrentLayer[currentLayerIndex];
+
+                    // check to see if the current node has any weights between it and the next layer node
+                    if (genome.SenderDictionary.ContainsKey(currentNode) && genome.SenderDictionary[currentNode].Contains(nextLayerNode))
+                    {
+                        // since this node has a weight between it and the next layer node we should get that weight and add it to the matrix
+
+                        if (genome.TryLookupInnovation(currentNode, nextLayerNode, out IInnovation innovation))
+                        {
+                            // set the weight
+                            SetWeight(ref weights, ref nextLayerIndex, ref currentLayerIndex, innovation.Weight);
+                        }
+                        else
+                        {
+                            // if the sender dict has an entry but we can't find the innovation something is wrong
+                            throw Networks.Exceptions.MissingInnovationEntry(currentNode, nextLayerNode);
+                        }
+                    }
+                    else
+                    {
+                        // if the node has no weight with the target node then we use a weight of 0
+                        SetWeight(ref weights, ref nextLayerIndex, ref currentLayerIndex, 0d);
+                    }
+                }
+            }
+
+            // now we should get the weights for any nodes that were forwarded
+
+            for (int i = 0; i < ForwardedNodes.Length; i++)
+            {
+                ref int forwardNode = ref ForwardedNodes[i];
+
+                int row = NextLayer.Length + i;
+                for (int node = 0; node < CurrentLayer.Length; node++)
+                {
+                    if (CurrentLayer[node] == forwardNode)
+                    {
+                        SetWeight(ref weights, ref row, ref node, 1d);
+                        break;
+                    }
+                }
+            }
+
+            // construct the matrix and return it
+            return new Double.Matrix(rows, columns, weights, false);
         }
 
         internal int[][] GetForwardedNodes(ref int[][] Layers, ref DecodedGenome genome)

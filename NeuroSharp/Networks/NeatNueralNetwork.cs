@@ -119,6 +119,8 @@ namespace NeuroSharp.NEAT
         /// </summary>
         public bool TopologyChanged => Dirty;
 
+        public IMatrix<double>[] Matrices { get; private set; }
+
         /// <summary>
         /// The hashes of all the innovations that this network currently has in its genome
         /// </summary>
@@ -190,16 +192,18 @@ namespace NeuroSharp.NEAT
             Dirty = false;
 
             // decode the genome into several dictionaries that will help with constructing the matrices that are used for evaluation
-            DecodedGenome concurrentDict = PhenotypeGenerator.DecodeGenome(this);
+            DecodedGenome genome = PhenotypeGenerator.DecodeGenome(this);
 
             // store the dictionary for fast lookup of node layers
-            this.NodeDictionary = concurrentDict.NodeDictionary;
+            this.NodeDictionary = genome.NodeDictionary;
 
             // derive the layers from the dictionary
-            this.NodeLayers = PhenotypeGenerator.GetLayers(ref concurrentDict);
+            this.NodeLayers = PhenotypeGenerator.GetLayers(ref genome);
 
             // get the largest node id contained within innovations so we can reset the nextNodeNumber
             Interlocked.Add(ref NextNodeNumber, GetLargestNodeId() - NextNodeNumber);
+
+            this.Matrices = PhenotypeGenerator.GenerateMatrices(ref genome);
         }
 
         public async Task<MutationResult> Mutate() => await Mutater.Mutate(this);
@@ -215,25 +219,9 @@ namespace NeuroSharp.NEAT
         /// </summary>
         /// <param name="Data"></param>
         /// <returns></returns>
-        public async Task<double[]> Evaluate(double[] Data)
+        public double[] Evaluate(double[] Data)
         {
-            await VerifyNetworkBeforeEvaluation(Data);
-
-            // this is by default a recursive function, may need a refactor for performance reasons (if there are any)
-
             return Evaluator.Evaluate(Data, this);
-        }
-
-        /// <summary>
-        /// Evaluates the data, runs the result through the <see cref="IFitnessFunction{U, T}"/> in the <see cref="Evaluator"/> and returns the result.
-        /// </summary>
-        /// <param name="Data"></param>
-        /// <returns></returns>
-        public async Task<double> EvaluateWithFitness(double[] Data)
-        {
-            await VerifyNetworkBeforeEvaluation(Data);
-
-            return Evaluator.EvaluateWithFitness(Data, this);
         }
 
         internal async Task VerifyNetworkBeforeEvaluation(double[] Data)

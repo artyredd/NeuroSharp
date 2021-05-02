@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 
 namespace NeuroSharp.NEAT
 {
-    [DebuggerDisplay("{InputNode} → {OutputNode} —— {Id} ")]
     public class Innovation : IInnovation, IEqualityComparer<Innovation>
     {
         /// <summary>
@@ -47,6 +46,11 @@ namespace NeuroSharp.NEAT
         public int GetHashCode([DisallowNull] Innovation obj)
         {
             return obj.GetHashCode();
+        }
+
+        public override string ToString()
+        {
+            return string.Format("{3} {0} → {1} —— {2} ", InputNode, OutputNode, Id, Enabled ? "✔" : "❌");
         }
 
         public string Hash() => Hasher.Hash(this);

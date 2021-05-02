@@ -18,6 +18,11 @@ namespace NeuroSharp.NEAT.Structs
     public ref struct DecodedGenome
     {
         /// <summary>
+        /// The hasher used to compare <see cref="IInnovation"/>s for weight lookups
+        /// </summary>
+        public static INeatHasher Hasher { get; set; } = new DefaultHasher();
+
+        /// <summary>
         /// Key: Node Id Value: Layer The Node is in
         /// <code>
         /// [0] is output layer
@@ -72,5 +77,22 @@ namespace NeuroSharp.NEAT.Structs
         /// </code>
         /// </summary>
         public IDictionary<int, int[]> ReceieverDictionary { get; init; }
+
+        /// <summary>
+        /// Key: Hashed IInovation, see: <see cref="IInnovation.Hash()"/>, Value: the <see cref="IInnovation"/>
+        /// </summary>
+        public IDictionary<string, IInnovation> InnovationDictionary { get; init; }
+
+        public bool TryLookupInnovation(int fromNode, int toNode, out IInnovation innovation)
+        {
+            string hash = Hasher.Hash(fromNode, toNode);
+            if (InnovationDictionary.ContainsKey(hash))
+            {
+                innovation = InnovationDictionary[hash];
+                return true;
+            }
+            innovation = default;
+            return false;
+        }
     }
 }

@@ -30,6 +30,10 @@ namespace NeuroSharp.NEAT
 
         public INeatNetworkComparer NetworkComparer { get; set; } = new DefaultNetworkComparer();
 
+        public IFitnessFunction<double[], double> FitnessFunction { get; set; } = new DefaultFitnessFunction();
+
+        public ReferenceAction<double[], double> FitnessAction { get; set; } = (ref double[] arr) => arr.Average(x => x);
+
         /// <summary>
         /// Holds the classification of each species. Each entry in the array is an array of integers. Where each integer represents the index of a network inside the <see cref="Generation"/> array.
         /// Array scheme:
@@ -93,12 +97,51 @@ namespace NeuroSharp.NEAT
         {
             double[][] result = new double[Generation.Length][];
 
+            Task[] tasks = new Task[Generation.Length];
+
             for (int i = 0; i < Generation.Length; i++)
             {
-                await Task.Run(() => Generation[i].Evaluate(Data), token);
+                tasks[i] = Task.Run(() => Generation[i].Evaluate(Data), token);
             }
 
+            await Task.WhenAll(tasks);
+
             return result;
+        }
+
+        public async Task<double[][]> EvaluateSpecies(int species, double[] Data, CancellationToken token)
+        {
+            int n = Species[species].Length;
+
+            double[][] result = new double[n][];
+
+            Task[] tasks = new Task[n];
+
+            for (int i = 0; i < n; i++)
+            {
+                int organism = Species[species][i];
+                tasks[i] = Task.Run(() => result[i] = Generation[organism].Evaluate(Data), token);
+            }
+
+            await Task.WhenAll(tasks);
+
+            return result;
+        }
+
+        public double[] GetSpeciesFitness(double[][] SpeciesEvalResults)
+        {
+            double[] resultArray = new double[SpeciesEvalResults.Length];
+
+            Span<double> results = new(resultArray);
+
+            for (int i = 0; i < results.Length; i++)
+            {
+                results[i] = FitnessFunction.CalculateFitnesses(SpeciesEvalResults[i], FitnessAction);
+            }
+
+            results = FitnessFunction.AdjustSpeciesFitnesses(ref results);
+
+            return resultArray;
         }
 
         public async Task SpeciateGeneration()

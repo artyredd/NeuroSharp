@@ -25,13 +25,6 @@ namespace NeuroSharp.NEAT
         /// </summary>
         /// <param name="Data"></param>
         /// <returns></returns>
-        Task<T> Evaluate(T Data);
-
-        /// <summary>
-        /// Evaluates the data, runs the result through the <see cref="IFitnessFunction{U, T}"/> in the <see cref="Evaluator"/> and returns the result.
-        /// </summary>
-        /// <param name="Data"></param>
-        /// <returns></returns>
-        Task<U> EvaluateWithFitness(T Data);
+        T Evaluate(T Data);
     }
 }

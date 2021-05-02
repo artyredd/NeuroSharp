@@ -91,6 +91,32 @@ namespace NeuroSharp.Tests.NEAT
             Assert.Contains(2, forwardedNodes[1]);
         }
 
+        [Fact]
+        public void GenerateMatricesWorks()
+        {
+            var network = CreateExampleNetwork();
+
+            // get the genome of the network so we can call internal methods with it
+            var genome = ((NeatNueralNetwork)network).PhenotypeGenerator.DecodeGenome(network);
+
+            IMatrix<double>[] matrices = ((NeatNueralNetwork)network).PhenotypeGenerator.GenerateMatrices(ref genome);
+
+            Assert.Equal(2, matrices.Length);
+        }
+
+        [Fact]
+        public void GenerateMatricesAdvanced()
+        {
+            var network = CreateMultiForwardExample();
+
+            // get the genome of the network so we can call internal methods with it
+            var genome = ((NeatNueralNetwork)network).PhenotypeGenerator.DecodeGenome(network);
+
+            IMatrix<double>[] matrices = ((NeatNueralNetwork)network).PhenotypeGenerator.GenerateMatrices(ref genome);
+
+            Assert.Equal(3, matrices.Length);
+        }
+
         INeatNetwork CreateExampleNetwork()
         {
             // this is a duplicate test that tests disjoint as the other does not
@@ -102,35 +128,35 @@ namespace NeuroSharp.Tests.NEAT
                     InputNode = 0,
                     OutputNode = 4,
                     Enabled = true,
-                    Weight = 1
+                    Weight = 0.1
                 },
                 new Innovation(){
                     Id = 2,
                     InputNode = 1,
                     OutputNode = 4,
                     Enabled = true,
-                    Weight = 1
+                    Weight = 0.2
                 },
                 new Innovation(){
                     Id = 4,
                     InputNode = 1,
                     OutputNode = 3,
                     Enabled = false,
-                    Weight = 1
+                    Weight = 0.4
                 },
                 new Innovation(){
                     Id = 5,
                     InputNode = 2,
                     OutputNode = 3,
                     Enabled = true,
-                    Weight = 1
+                    Weight = 0.5
                 },
                 new Innovation(){
                     Id = 6,
                     InputNode = 4,
                     OutputNode = 3,
                     Enabled = true,
-                    Weight = 1
+                    Weight = 0.6
                 },
             };
             // we use hashes to verify genes make sure to hash them
@@ -213,56 +239,56 @@ namespace NeuroSharp.Tests.NEAT
                     InputNode = 0,
                     OutputNode = 4,
                     Enabled = false,
-                    Weight = 1
+                    Weight = 0.1
                 },
                 new Innovation(){
                     Id = 2,
                     InputNode = 1,
                     OutputNode = 4,
                     Enabled = true,
-                    Weight = 1
+                    Weight = 0.2
                 },
                 new Innovation(){
                     Id = 3,
                     InputNode = 2,
                     OutputNode = 4,
                     Enabled = true,
-                    Weight = 1
+                    Weight = 0.3
                 },
                 new Innovation(){
                     Id = 4,
                     InputNode = 1,
                     OutputNode = 3,
                     Enabled = false,
-                    Weight = 1
+                    Weight = 0.4
                 },
                 new Innovation(){
                     Id = 6,
                     InputNode = 4,
                     OutputNode = 3,
                     Enabled = true,
-                    Weight = 1
+                    Weight = 0.6
                 },
                 new Innovation(){
                     Id = 7,
                     InputNode = 0,
                     OutputNode = 5,
                     Enabled = true,
-                    Weight = 1
+                    Weight = 0.7
                 },
                 new Innovation(){
                     Id = 8,
                     InputNode = 5,
                     OutputNode = 4,
                     Enabled = true,
-                    Weight = 1
+                    Weight = 0.8
                 },
                 new Innovation(){
                     Id = 9,
                     InputNode = 2,
                     OutputNode = 3,
                     Enabled = true,
-                    Weight = 1
+                    Weight = 0.9
                 },
             };
 
