@@ -6,17 +6,12 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using NeuroSharp.Logic;
 
 namespace NeuroSharp.NEAT
 {
     public class DefaultPhenotypeGenerator<T> : IPhenotypeGenerator<double> where T : unmanaged, IComparable<T>, IEquatable<T>
     {
-        /// <summary>
-        /// Defines a delegate that uses a reference integer for some action.
-        /// </summary>
-        /// <param name="n"></param>
-        delegate void ReferenceIntAction(ref int n);
-
         ushort GetAndSetHiddenLayer(ref int hiddenNodeId, ref IDictionary<int, int[]> Receivers, ref IDictionary<int, ushort> NodeDict, ref IDictionary<ushort, int[]> LayerDict)
         {
             // node dictionary should have the following scheme:
@@ -138,30 +133,6 @@ namespace NeuroSharp.NEAT
             return GetLayers(ref decodedGenome);
         }
 
-        static int TwoThreasholdValidation(ref int id, ref int LowerThreashold, ref int UpperThreashold, ReferenceIntAction WhenLowerThreashold, ReferenceIntAction WhenUpperThreashold, ReferenceIntAction WhenNeither)
-        {
-            // this may seem confusing but all this is checking is to see if a particular value is within two ranges across two checks
-            // this is just abstracted with delagate to prevent unessesecary copying of value types(the integers)
-            // in this example this would be if we were given the range upper = 5 lower = 3
-            // |  OnLower   |  OnUpper  |      OnNeither     |
-            // | 0  1   2   |  3    4   |  6 9 5 8 7 n...    |
-            if (id < UpperThreashold)
-            {
-
-                if (id < LowerThreashold)
-                {
-                    WhenLowerThreashold(ref id);
-                    return 2;
-                }
-
-                WhenUpperThreashold(ref id);
-                return 1;
-            }
-
-            WhenNeither(ref id);
-
-            return 0;
-        }
 
         public DecodedGenome DecodeGenome(INeatNetwork network)
         {
@@ -268,8 +239,8 @@ namespace NeuroSharp.NEAT
 
                 // we should check to see if any nodes references in the innovation are input nodes or output nodes
                 // we will know if 
-                TwoThreasholdValidation(ref input, ref InputNodeThreashold, ref HiddenNodeIdThreashold, WhenInputNode, WhenOutputNode, WhenHiddenNode);
-                TwoThreasholdValidation(ref output, ref InputNodeThreashold, ref HiddenNodeIdThreashold, WhenInputNode, WhenOutputNode, WhenHiddenNode);
+                Validators.WithinTwoLayeredThreashold(ref input, ref InputNodeThreashold, ref HiddenNodeIdThreashold, WhenInputNode, WhenOutputNode, WhenHiddenNode);
+                Validators.WithinTwoLayeredThreashold(ref output, ref InputNodeThreashold, ref HiddenNodeIdThreashold, WhenInputNode, WhenOutputNode, WhenHiddenNode);
             }
 
             // ~ O(i * n)
@@ -280,6 +251,7 @@ namespace NeuroSharp.NEAT
             {
                 GetAndSetHiddenLayer(ref hiddenSpan[i], ref Receivers, ref NodeDict, ref LayerDict);
             }
+
 
             // now that we have what our input nodes, output nodes, and hidden nodes are and their exact location we can construct the matrix to represent the data
             // reverse the dictionary and return it

@@ -7,38 +7,51 @@ using System.Threading.Tasks;
 namespace NeuroSharp.NEAT
 {
     /// <summary>
-    /// Represents an <see cref="Action{T1}"/> that accepts and mutates a by-reference <typeparamref name="T"/>
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="value"></param>
-    /// <returns></returns>
-    public delegate U ReferenceAction<T, U>(ref T value);
-
-    /// <summary>
     /// The default fitness function just averages the outputs and returns the averaged results. Fitness function should be assigned a less arbitrary class for advanced problems. Or not assigned for simpler problems like game decisions.
     /// </summary>
     public class DefaultFitnessFunction : IFitnessFunction<double[], double>
     {
-        public Span<double> CalculateFitnesses(double[] OrginismEvaluationResults, ReferenceAction<double, double[]> ActionThatCalculatesFitness)
+        /// <summary>
+        /// The <see cref="ReferenceFunc{T, TResult}"/> that accepts a <see langword="double"/>[] (the results from evaluating a single organism) and outputs a double(the overall raw Fitness of the network's results).
+        /// <para>
+        /// Example:
+        /// <code>
+        /// IFitnessFuncion fitter = new();
+        /// </code>
+        /// <code>
+        /// fitter.Function = (ref double[] evalutationResults) => evaulationResults.Sum();
+        /// </code>
+        /// <code>
+        /// fitt.CalculateFitness(new double[]{1,2,3,4,5});
+        /// </code>
+        /// <para>
+        /// Output:
+        /// <code>
+        /// 15 (the summed value of the doubles)
+        /// </code>
+        /// </para>
+        /// </para>
+        /// </summary>
+        public ReferenceFunc<double[], double> Function { get; set; } = (ref double[] arr) => default;
+
+        public double CalculateFitness(double[] OrginismEvaluationResults)
         {
-            Span<double> results = new(OrginismEvaluationResults);
-            for (int i = 0; i < results.Length; i++)
-            {
-                ActionThatCalculatesFitness(ref results[i]);
-            }
-            return results;
+            return Function(ref OrginismEvaluationResults);
         }
 
-        public double CalculateFitnesses(double[] OrginismEvaluationResults, ReferenceAction<double[], double> ActionThatCalculatesFitness)
-        {
-            return ActionThatCalculatesFitness(ref OrginismEvaluationResults);
-        }
-
-        public Span<double> AdjustSpeciesFitnesses(ref Span<double> fitnesses)
+        /// <summary>
+        /// Adjusts the fitness for every element(according to population size) and totals the fitness for the provided set.
+        /// </summary>
+        /// <param name="RawFitnesses"></param>
+        /// <param name="TotalFitness"></param>
+        /// <returns></returns>
+        public Span<double> AdjustSpeciesFitness(ref Span<double> RawFitnesses, out double TotalFitness)
         {
             // the adjusted fitness of any organism is (or reduces to) fitness/population size
             // pg 12 https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.28.5457&rep=rep1&type=pdf
-            int populationSize = fitnesses.Length;
+            int populationSize = RawFitnesses.Length;
+
+            TotalFitness = default;
 
             double AdjustFitness(ref double fitness)
             {
@@ -47,19 +60,27 @@ namespace NeuroSharp.NEAT
 
             for (int i = 0; i < populationSize; i++)
             {
-                ref double fitness = ref fitnesses[i];
+                ref double fitness = ref RawFitnesses[i];
                 fitness = AdjustFitness(ref fitness);
+                TotalFitness += fitness;
             }
 
-            return fitnesses;
+            return RawFitnesses;
         }
 
-        public Span<double> AdjustSpeciesFitnesses(double[] SpeciesFitnesses)
+        /// <summary>
+        /// Adjusts the fitness for every element(according to population size) and totals the fitness for the provided set.
+        /// </summary>
+        /// <param name="RawFitnesses"></param>
+        /// <param name="TotalFitness"></param>
+        /// <returns></returns>
+        public Span<double> AdjustSpeciesFitness(double[] RawFitnesses, out double TotalFitness)
         {
             // the adjusted fitness of any organism is (or reduces to) fitness/population size
             // pg 12 https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.28.5457&rep=rep1&type=pdf
-            Span<double> fitnesses = new(SpeciesFitnesses);
-            return AdjustSpeciesFitnesses(ref fitnesses);
+            Span<double> fitnesses = new(RawFitnesses);
+
+            return AdjustSpeciesFitness(ref fitnesses, out TotalFitness);
         }
 
         public double[] GetProportionalFitnesses(double[] SummedSpeciesFitnesses)

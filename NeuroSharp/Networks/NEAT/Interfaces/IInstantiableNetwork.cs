@@ -9,6 +9,8 @@ namespace NeuroSharp.NEAT
     public interface IInstantiableNetwork<T>
     {
         T Create(int InputNodes, int OutputNodes);
+        T Create(int InputNodes, int OutputNodes, IInnovation[] Genome);
         Task<T> CreateAsync(int InputNodes, int OutputNodes);
+        Task<T> CreateAsync(int InputNodes, int OutputNodes, IInnovation[] Genome);
     }
 }

@@ -11,7 +11,7 @@ namespace NeuroSharp.NEAT
     /// </typeparam>
     public interface INetwork<T, U>
     {
-        string Name { get; }
+        string Name { get; set; }
         int InputNodes { get; }
 
         int OutputNodes { get; }

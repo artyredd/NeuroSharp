@@ -128,6 +128,8 @@ namespace NeuroSharp.NEAT
 
         public INeatNetwork Create(int InputNodes, int OutputNodes) => CreateAsync(InputNodes, OutputNodes).Result;
 
+        public INeatNetwork Create(int InputNodes, int OutputNodes, IInnovation[] Genome) => CreateAsync(InputNodes, OutputNodes, Genome).Result;
+
         /// <summary>
         /// Creates a new INeatNetwork object with the given <paramref name="InputNodes"/> and <paramref name="OutputNodes"/> and initialized using the <see cref="IMutater.InitializeConnections(INeatNetwork)"/>
         /// </summary>
@@ -136,11 +138,13 @@ namespace NeuroSharp.NEAT
         /// <returns></returns>
         public async Task<INeatNetwork> CreateAsync(int InputNodes, int OutputNodes)
         {
+            INeatNetwork network = new NeatNueralNetwork((ushort)InputNodes, (ushort)OutputNodes);
+
             // create the default connections
             // per the specs all input nodes must connection to all output nodes
-            await Mutater.InitializeConnections(this);
+            await network.Mutater.InitializeConnections(network);
 
-            return new NeatNueralNetwork((ushort)InputNodes, (ushort)OutputNodes);
+            return network;
         }
 
         /// <summary>
