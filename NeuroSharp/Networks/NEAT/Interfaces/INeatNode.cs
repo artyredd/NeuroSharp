@@ -2,6 +2,7 @@
 
 namespace NeuroSharp.NEAT
 {
+    [Obsolete("Use INeatNetwork.NodeLayers and INeatNetwork.NodeDictionary")]
     public interface INeatNode
     {
         /// <summary>

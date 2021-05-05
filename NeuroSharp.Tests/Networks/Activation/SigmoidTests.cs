@@ -17,11 +17,12 @@ namespace NeuroSharp.Tests.Networks.Activation
             List<double> vals = new();
             for (int i = 0; i < 1000; i++)
             {
-                double tmp = rng.NextDouble() * int.MaxValue;
+                double tmp = rng.NextDouble();
+                double expected = tmp;
                 // make sure the sigmoid function is actually working
                 double changed = Sigmoid.Function(ref tmp);
 
-                Assert.NotEqual(tmp, changed);
+                Assert.NotEqual(expected, changed);
 
                 vals.Add(changed);
             }

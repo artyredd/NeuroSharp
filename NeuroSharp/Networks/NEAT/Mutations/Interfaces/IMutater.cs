@@ -8,7 +8,15 @@ namespace NeuroSharp.NEAT
     public interface IMutater
     {
         /// <summary>
-        /// The chance each individual weight has of being mutated by Min(-1d) - Max(1d).
+        /// The chance each individual weight has of being completely reassigned a random new value between Min(-1d) - Max(1d)
+        /// <code>
+        /// Rolled for every weight.
+        /// </code>
+        /// </summary>
+        double WeightReassignmentChance { get; set; }
+
+        /// <summary>
+        /// The chance each individual weight has of being mutated by <see cref="WeightMutationModifier"/> * Min(-1d) - Max(1d).
         /// <code>
         /// Rolled for every weight.
         /// </code>
@@ -32,10 +40,16 @@ namespace NeuroSharp.NEAT
         double AddNodeChance { get; set; }
 
         /// <summary>
+        /// The modifier that limits the amount a weight is preturbed when it is mutated. Only applies to <see cref="MutateWeightChance"/>
+        /// </summary>
+        double WeightMutationModifier { get; set; }
+
+        /// <summary>
         /// Mutates a <see cref="INeatNetwork"/> by either changing weights, adding a connection. Or adding a node. 
         /// </summary>
         /// <param name="network"></param>
         /// <returns></returns>
         Task<MutationResult> Mutate(INeatNetwork network);
+        Task<InitializeNetworkResult> InitializeConnections(INeatNetwork network);
     }
 }

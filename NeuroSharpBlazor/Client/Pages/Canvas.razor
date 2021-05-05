@@ -129,8 +129,9 @@
         Log("Reset Neural Network", MsgType.warning);
     }
 
-    private async Task Train()
+    private void Train()
     {
+
         IMatrix<double> _0_1 = nn.CheckInput(new double[] { 0, 1 });
         IMatrix<double> _1_1 = nn.CheckInput(new double[] { 1, 1 });
         IMatrix<double> _1_0 = nn.CheckInput(new double[] { 1, 0 });

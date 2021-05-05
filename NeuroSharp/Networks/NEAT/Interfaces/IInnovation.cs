@@ -1,4 +1,5 @@
-﻿namespace NeuroSharp.NEAT
+﻿using System.Diagnostics;
+namespace NeuroSharp.NEAT
 {
     public interface IInnovation
     {
@@ -9,10 +10,6 @@
         ushort InputNode { get; init; }
 
         ushort OutputNode { get; init; }
-
-        ushort InputNodeIndex { get; set; }
-
-        ushort OutputNodeIndex { get; set; }
 
         double Weight { get; set; }
 

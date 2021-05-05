@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Security.Cryptography;
@@ -14,6 +15,7 @@ namespace NeuroSharp.NEAT
         /// The innovation ID of this object
         /// </summary>
         public int Id { get; set; }
+
         /// <summary>
         /// The node that accepts the input for this innovation. InputNode -> Weight -> OutputNode
         /// </summary>
@@ -34,16 +36,6 @@ namespace NeuroSharp.NEAT
         /// </summary>
         public double Weight { get; set; }
 
-        /// <summary>
-        /// The index of the input node, since the input node array is not index based and is FIFO
-        /// </summary>
-        public ushort InputNodeIndex { get; set; }
-
-        /// <summary>
-        /// The index of the ouput node, since the input node array is not index based and is FIFO
-        /// </summary>
-        public ushort OutputNodeIndex { get; set; }
-
         public static INeatHasher Hasher { get; set; } = new DefaultHasher();
 
         public bool Equals(Innovation x, Innovation y)
@@ -54,6 +46,11 @@ namespace NeuroSharp.NEAT
         public int GetHashCode([DisallowNull] Innovation obj)
         {
             return obj.GetHashCode();
+        }
+
+        public override string ToString()
+        {
+            return string.Format("{3} {0} → {1} —— {2} ", InputNode, OutputNode, Id, Enabled ? "✔" : "❌");
         }
 
         public string Hash() => Hasher.Hash(this);

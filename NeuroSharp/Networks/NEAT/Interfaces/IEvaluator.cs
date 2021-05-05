@@ -1,4 +1,6 @@
-﻿namespace NeuroSharp.NEAT
+﻿using NeuroSharp.Propagation;
+
+namespace NeuroSharp.NEAT
 {
     /// <summary>
     /// Defines the object responsible for evaluating inputs using a given network and determining the organisms fitness
@@ -9,10 +11,9 @@
     public interface IEvaluator<T, U, V>
     {
         IActivationFunction<T> Activator { get; set; }
-        IFitnessFunction<U, T> FitnessFunction { get; set; }
+
+        IPropogator<double> Propogator { get; set; }
 
         U Evaluate(T[] Inputs, INeatNetwork network);
-
-        V EvaluateWithFitness(T[] Inputs, INeatNetwork network);
     }
 }

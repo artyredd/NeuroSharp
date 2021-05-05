@@ -6,7 +6,6 @@
     public interface INeatHasher
     {
         string Hash(IInnovation node);
-        string Hash(INeatNode node);
         string Hash(int InputNode, int OutputNode);
     }
 }

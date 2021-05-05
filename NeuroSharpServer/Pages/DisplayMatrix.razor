@@ -1,0 +1,28 @@
+﻿<div class="mx-2">
+    <h3>
+        @Title
+    </h3>
+    <table class="table table-bordered" style="max-width: fit-content(); max-height: 100px;">
+        <thead>
+        </thead>
+        <tbody>
+            @for (int row = 0; row < Matrix.Rows; row++)
+            {
+                <tr>
+                    @for (int col = 0; col < Matrix.Columns; col++)
+                    {
+                        <td>@Matrix[row, col]</td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+@code {
+
+    [Parameter]
+    public IMatrix<double> Matrix { get; set; }
+
+    [Parameter]
+    public string Title { get; set; } = "Matrix";
+}

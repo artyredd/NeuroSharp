@@ -16,4 +16,8 @@
     <Folder Include="Networks\Fitness\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="System.Diagnostics.Debug" Version="4.3.0" />
+  </ItemGroup>
+
 </Project>
