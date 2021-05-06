@@ -304,13 +304,10 @@ namespace NeuroSharp.NEAT
 
             // make room for the new organisms that will be produced when we breed the top performers
             // get a list of organisms that should be replaced
-            Span<int> truncatedOrganisms = ReproductionHandler.TruncateSpecies(ref organismSpan);
+            Span<int> truncatedOrganisms = ReproductionHandler.TruncateSpecies(ref organismSpan, out Span<int> remainingOrganisms);
 
-            // create an array that has the remaining parents
-
-            // get an array of pairs to breed
-
-            // breed pairs
+            // generate pairs to breed from
+            (int Left, int Right)[] BreedingPairs = ReproductionHandler.GenerateBreedingPairs(ref remainingOrganisms);
 
             // replace the generation indices with the new organisms
 

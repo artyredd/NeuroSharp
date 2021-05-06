@@ -135,30 +135,7 @@ namespace NeuroSharp.NEAT
         /// 1, 0
         /// </code>
         /// </summary>
-        SequentialMax,
-        /// <summary>
-        /// The two parent organisms are chosen one after another in order of fitnesses greatest to least
-        /// <para>
-        /// Example, parents in oder by fitness
-        /// </para>
-        /// <code>
-        /// 6 5 4 3 2 1 0
-        /// </code>
-        /// Parent Groups:
-        /// <code>
-        /// 6, 5
-        /// </code>
-        /// <code>
-        /// 4, 3
-        /// </code>
-        /// <code>
-        /// 2, 1
-        /// </code>
-        /// <code>
-        /// 1, 0
-        /// </code>
-        /// </summary>
-        SequentialMin,
+        Sequential,
         /// <summary>
         /// The two parent organism are chosen by opposite fitnesses, greatest with least, second greatest with second least
         /// <para>

@@ -202,6 +202,33 @@ namespace NeuroSharp
             }
         }
 
+        /// <returns></returns>
+        [DebuggerHidden]
+        public static int[] NextIntArray(int size, int lower = int.MinValue, int upperExclusive = int.MaxValue)
+        {
+            try
+            {
+                Limiter.Wait();
+
+                static int[] GenerateArray(int size, int lower, int upper)
+                {
+                    int[] result = new int[size];
+                    Span<int> span = new(result);
+                    for (int i = 0; i < span.Length; i++)
+                    {
+                        span[i] = Rng.Next(lower, upper);
+                    }
+                    return result;
+                }
+
+                return GenerateArray(size, lower, upperExclusive);
+            }
+            finally
+            {
+                Limiter.Release();
+            }
+        }
+
         /// <summary>
         /// Returns a random double between <paramref name="lower"/> and <paramref name="upper"/>
         /// </summary>

@@ -9,6 +9,7 @@ namespace NeuroSharp.NEAT
         ReferenceFunc<ISpeciesFitness<double>, double, SpeciesReproductionRule> SpeciesSelectionFunction { get; set; }
 
         SpeciesReproductionRule[] SelectUnfitSpecies(ref ISpeciesFitness<double>[] Fitneses, ref double TotalGenerationFitness);
-        Span<int> TruncateSpecies(ref Span<int> Organisms);
+        Span<int> TruncateSpecies(ref Span<int> Organisms, out Span<int> RemainingOrganisms);
+        (int Left, int Right)[] GenerateBreedingPairs(ref Span<int> EligibleParentOrganisms);
     }
 }
