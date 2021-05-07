@@ -38,6 +38,11 @@ namespace NeuroSharp.NEAT
             fitness = Fitness;
         }
 
+        public static implicit operator int(OrganismStruct item)
+        {
+            return item.Id;
+        }
+
         public static implicit operator OrganismStruct((int Id, double Fitness) value)
         {
             return new OrganismStruct(value.Id, value.Fitness);

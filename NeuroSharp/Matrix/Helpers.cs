@@ -394,5 +394,39 @@ namespace NeuroSharp.Helpers
             }
             return AppendValue(ref array, ref value);
         }
+
+        public static ref T[] RemoveValues<T>(ref T[] array, ref Span<T> Values) where T : IComparable<T>, IEquatable<T>
+        {
+            int length = array.Length;
+            Span<T> arrSpan = new(array);
+
+            // keep track of how many values we removed, just becuase they've included values into the Values span doesn't mean those
+            // values are definately in the array
+            int amountOfRemovedValues = 0;
+
+            for (int i = 0; i < arrSpan.Length; i++)
+            {
+                if (Values.Contains(arrSpan[i]))
+                {
+                    // shift all values on the right to the left
+                    for (int x = i; x < (arrSpan.Length - amountOfRemovedValues); x++)
+                    {
+                        arrSpan[x] = arrSpan[(x + 1) % length];
+                    }
+
+                    amountOfRemovedValues++;
+
+                    // start this loop over so we can evaluate the next value(that we moved into this spot)
+                    i--;
+                    continue;
+                }
+            }
+
+            // truncate the dead values if there are any
+            System.Array.Resize(ref array, length - amountOfRemovedValues);
+
+            return ref array;
+        }
+
     }
 }

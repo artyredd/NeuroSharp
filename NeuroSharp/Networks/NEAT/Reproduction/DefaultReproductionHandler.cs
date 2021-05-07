@@ -138,7 +138,7 @@ namespace NeuroSharp.NEAT
             return Organisms[^index..];
         }
 
-        public (OrganismStruct Left, OrganismStruct Right)[] GenerateBreedingPairs(ref Span<OrganismStruct> EligibleParentOrganisms)
+        public Span<(OrganismStruct Left, OrganismStruct Right)> GenerateBreedingPairs(ref Span<OrganismStruct> EligibleParentOrganisms)
         {
             return ReproductionMethod switch
             {
