@@ -19,7 +19,7 @@ namespace NeuroSharp.Bench
             double[] nums = new double[2 << ArraySize];
             for (int i = 0; i < nums.Length; i++)
             {
-                nums[i] = await Helpers.NextDoubleAsync();
+                nums[i] = await Helpers.Random.NextDoubleAsync();
             }
             return nums;
         }
@@ -27,7 +27,7 @@ namespace NeuroSharp.Bench
         [Benchmark]
         public async Task<double[]> Test()
         {
-            return await Helpers.NextDoubleArray(2 << ArraySize);
+            return await Helpers.Random.NextDoubleArray(2 << ArraySize);
         }
     }
 }

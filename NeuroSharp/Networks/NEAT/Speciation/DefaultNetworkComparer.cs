@@ -137,16 +137,16 @@ namespace NeuroSharp.NEAT
                         inheritWholeExcess = false;
 
                         // determine the max disjoint to inherit
-                        if (Helpers.NextUDouble() >= 0.5d && GenomeMatches.LeftDisjoint.Length > 0)
+                        if (Helpers.Random.NextUDouble() >= 0.5d && GenomeMatches.LeftDisjoint.Length > 0)
                         {
-                            amountOfDisjointGenesToInherit = Helpers.Next(0, GenomeMatches.LeftDisjoint.Length);
+                            amountOfDisjointGenesToInherit = Helpers.Random.Next(0, GenomeMatches.LeftDisjoint.Length);
                         }
                         else if (GenomeMatches.RightDisjoint.Length > 0)
                         {
-                            amountOfDisjointGenesToInherit = Helpers.Next(0, GenomeMatches.RightDisjoint.Length);
+                            amountOfDisjointGenesToInherit = Helpers.Random.Next(0, GenomeMatches.RightDisjoint.Length);
                         }
 
-                        amountOfExcessGenesToInherit = Helpers.Next(0, GenomeMatches.Excess.Length + 1);
+                        amountOfExcessGenesToInherit = Helpers.Random.Next(0, GenomeMatches.Excess.Length + 1);
 
                         additionalGenomeSize = amountOfExcessGenesToInherit + amountOfDisjointGenesToInherit;
 
@@ -164,7 +164,7 @@ namespace NeuroSharp.NEAT
             Span<IInnovation> newGenome = new(result);
 
             // get the rolls for the entire genome at once to avoid costly semaphore hits
-            double[] rolls = Helpers.NextUDoubleArray(newGenome.Length).Result;
+            double[] rolls = Helpers.Random.NextUDoubleArray(newGenome.Length).Result;
 
             for (int i = 0; i < startingIndex; i++)
             {
@@ -218,7 +218,7 @@ namespace NeuroSharp.NEAT
 
                 for (int i = 0; i < amountOfExcessGenesToInherit; i++)
                 {
-                    newGenome[i + startingIndex] = excess[(i + Helpers.Next(0, 101)) % amountOfExcessGenesToInherit];
+                    newGenome[i + startingIndex] = excess[(i + Helpers.Random.Next(0, 101)) % amountOfExcessGenesToInherit];
                 }
 
                 int index = startingIndex + amountOfExcessGenesToInherit;
@@ -226,7 +226,7 @@ namespace NeuroSharp.NEAT
                 // now randomly inherit excess genes
                 for (int i = 0; i < amountOfDisjointGenesToInherit; i++)
                 {
-                    if (Helpers.NextUDouble() >= 0.5d)
+                    if (Helpers.Random.NextUDouble() >= 0.5d)
                     {
                         // left
                         if (GenomeMatches.LeftDisjoint.Length - 1 > i)

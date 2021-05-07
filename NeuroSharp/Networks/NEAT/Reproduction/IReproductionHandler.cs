@@ -5,11 +5,11 @@ namespace NeuroSharp.NEAT
     public interface IReproductionHandler
     {
         double CustomOrganismTruncationPercentage { get; set; }
-        ReferenceFunc<int, bool> CustomOrganismTruncater { get; set; }
+        ReferenceFunc<OrganismStruct, bool> CustomOrganismTruncater { get; set; }
         ReferenceFunc<ISpeciesFitness<double>, double, SpeciesReproductionRule> SpeciesSelectionFunction { get; set; }
 
         SpeciesReproductionRule[] SelectUnfitSpecies(ref ISpeciesFitness<double>[] Fitneses, ref double TotalGenerationFitness);
-        Span<int> TruncateSpecies(ref Span<int> Organisms, out Span<int> RemainingOrganisms);
-        (int Left, int Right)[] GenerateBreedingPairs(ref Span<int> EligibleParentOrganisms);
+        Span<OrganismStruct> TruncateSpecies(ref Span<OrganismStruct> Organisms, out Span<OrganismStruct> RemainingOrganisms);
+        (OrganismStruct Left, OrganismStruct Right)[] GenerateBreedingPairs(ref Span<OrganismStruct> EligibleParentOrganisms);
     }
 }

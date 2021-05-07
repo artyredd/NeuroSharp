@@ -1,6 +1,7 @@
 ﻿@using NeuroSharp.NEAT
 @using System.IO;
 @using System.Threading;
+@using NeuroSharp;
 
 <div class="flex" style=@("max-height: 90vh; overflow-y: clip;")>
     <div class="d-flex my-2">
@@ -431,7 +432,7 @@ console = new();
 
         async Task<string> emojiName()
         {
-            int num = await Helpers.NextAsync(0, 61);
+            int num = await NeuroSharp.Helpers.Random.NextAsync(0, 61);
             return $" &#1280{(num < 10 ? $"0{num}" : num)};";
         }
 

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using NeuroSharp.Extensions.Matrix;
 
 namespace NeuroSharp
 {
@@ -49,8 +50,8 @@ namespace NeuroSharp
             {
                 return new Node<double>()
                 {
-                    Weights = new Double.Matrix(Rows, Columns, Helpers.NextDouble),
-                    Biases = new Double.Matrix(Rows, 1, Helpers.NextDouble)
+                    Weights = new Double.Matrix(Rows, Columns, Helpers.Random.NextDouble),
+                    Biases = new Double.Matrix(Rows, 1, Helpers.Random.NextDouble)
                 };
             }
             if (HiddenLayers?.Length is null or 0)

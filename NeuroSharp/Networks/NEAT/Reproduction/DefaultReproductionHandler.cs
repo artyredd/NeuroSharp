@@ -32,7 +32,7 @@ namespace NeuroSharp.NEAT
         /// </summary>
         public double CustomOrganismTruncationPercentage { get; set; } = 0.2d;
 
-        public ReferenceFunc<int, bool> CustomOrganismTruncater { get; set; } = (ref int NetworkIndex) => Helpers.NextUDouble() > 0.5d;
+        public ReferenceFunc<OrganismStruct, bool> CustomOrganismTruncater { get; set; } = (ref OrganismStruct organism) => Helpers.Random.NextUDouble() > 0.5d;
 
         /// <summary>
         /// Selects which species should reproduce into the next generation
@@ -87,7 +87,7 @@ namespace NeuroSharp.NEAT
             return rules;
         }
 
-        public Span<int> TruncateSpecies(ref Span<int> Organisms, out Span<int> RemainingOrganisms)
+        public Span<OrganismStruct> TruncateSpecies(ref Span<OrganismStruct> Organisms, out Span<OrganismStruct> RemainingOrganisms)
         {
             // truncate the sorted organisms based on the truncation method
             int index = 0;
@@ -96,7 +96,7 @@ namespace NeuroSharp.NEAT
             {
                 case OrganismTruncationMethod.None:
                     RemainingOrganisms = Organisms;
-                    return new(Array.Empty<int>());
+                    return new(Array.Empty<OrganismStruct>());
 
                 case OrganismTruncationMethod.Single:
                     RemainingOrganisms = Organisms[0..^1];
@@ -138,7 +138,7 @@ namespace NeuroSharp.NEAT
             return Organisms[^index..];
         }
 
-        public (int Left, int Right)[] GenerateBreedingPairs(ref Span<int> EligibleParentOrganisms)
+        public (OrganismStruct Left, OrganismStruct Right)[] GenerateBreedingPairs(ref Span<OrganismStruct> EligibleParentOrganisms)
         {
             return ReproductionMethod switch
             {
@@ -162,19 +162,19 @@ namespace NeuroSharp.NEAT
             };
         }
 
-        internal (int Left, int Right)[] BreedingPairs_Random(ref Span<int> EligibleParentOrganisms)
+        internal (OrganismStruct Left, OrganismStruct Right)[] BreedingPairs_Random(ref Span<OrganismStruct> EligibleParentOrganisms)
         {
             // calc the max pairs that can be generated
             int rollsNeeded = EligibleParentOrganisms.Length * 2;
 
             // create a result array
-            var pairs = new (int Left, int Right)[EligibleParentOrganisms.Length];
+            var pairs = new (OrganismStruct Left, OrganismStruct Right)[EligibleParentOrganisms.Length];
 
             // get all the rolls at once to avoid costly locks in the RNG async logic
-            int[] rolls = Helpers.NextIntArray(rollsNeeded, 0, EligibleParentOrganisms.Length);
+            int[] rolls = Helpers.Random.NextIntArray(rollsNeeded, 0, EligibleParentOrganisms.Length);
 
             // carve out contiguous blocks of memory for our working set to iterate faster
-            Span<(int Left, int Right)> pairSpan = pairs;
+            Span<(OrganismStruct Left, OrganismStruct Right)> pairSpan = pairs;
             Span<int> rollSpan = rolls;
 
             int rollIndex = 0;
@@ -192,48 +192,48 @@ namespace NeuroSharp.NEAT
             return pairs;
         }
 
-        internal (int Left, int Right)[] BreedingPairs_RandomSequential(ref Span<int> EligibleParentOrganisms)
+        internal (OrganismStruct Left, OrganismStruct Right)[] BreedingPairs_RandomSequential(ref Span<OrganismStruct> EligibleParentOrganisms)
         {
             int rollsNeeded = EligibleParentOrganisms.Length;
 
             // create a result array
-            var pairs = new (int Left, int Right)[rollsNeeded];
+            var pairs = new (OrganismStruct Left, OrganismStruct Right)[rollsNeeded];
 
-            int[] rolls = Helpers.NextIntArray(rollsNeeded, 0, EligibleParentOrganisms.Length);
+            int[] rolls = Helpers.Random.NextIntArray(rollsNeeded, 0, EligibleParentOrganisms.Length);
 
             // carve out contiguous blocks of memory for our working set to iterate faster
-            Span<(int Left, int Right)> pairSpan = pairs;
+            Span<(OrganismStruct Left, OrganismStruct Right)> pairSpan = pairs;
             Span<int> rollSpan = rolls;
 
             for (int i = 0; i < EligibleParentOrganisms.Length; i++)
             {
-                int right = rollSpan[i];
+                OrganismStruct right = EligibleParentOrganisms[rollSpan[i]];
 
                 // the left parent should be sequential, and the right parent should be random
-                pairSpan[i] = (EligibleParentOrganisms[i], EligibleParentOrganisms[right]);
+                pairSpan[i] = (EligibleParentOrganisms[i], right);
             }
 
             return pairs;
         }
 
-        internal (int Left, int Right)[] BreedingPairs_RandomXOR(ref Span<int> EligibleParentOrganisms)
+        internal (OrganismStruct Left, OrganismStruct Right)[] BreedingPairs_RandomXOR(ref Span<OrganismStruct> EligibleParentOrganisms)
         {
             int maxPairs = EligibleParentOrganisms.Length;
 
             // create a result array
-            var pairs = new (int Left, int Right)[maxPairs];
+            var pairs = new (OrganismStruct Left, OrganismStruct Right)[maxPairs];
 
-            int[] rolls = Helpers.NextIntArray(maxPairs, 0, EligibleParentOrganisms.Length);
+            int[] rolls = Helpers.Random.NextIntArray(maxPairs, 0, EligibleParentOrganisms.Length);
 
             // carve out contiguous blocks of memory for our working set to iterate faster
-            Span<(int Left, int Right)> pairSpan = pairs;
+            Span<(OrganismStruct Left, OrganismStruct Right)> pairSpan = pairs;
             Span<int> rollSpan = rolls;
 
             bool random = false;
             for (int i = 0; i < maxPairs; i++)
             {
-                int left = random ? EligibleParentOrganisms[i] : EligibleParentOrganisms[^(i + 1)];
-                int right = EligibleParentOrganisms[rollSpan[i]];
+                OrganismStruct left = random ? EligibleParentOrganisms[i] : EligibleParentOrganisms[^(i + 1)];
+                OrganismStruct right = EligibleParentOrganisms[rollSpan[i]];
 
                 pairSpan[i] = (left, right);
 
@@ -244,15 +244,15 @@ namespace NeuroSharp.NEAT
             return pairs;
         }
 
-        internal (int Left, int Right)[] BreedingPairs_Sequential(ref Span<int> EligibleParentOrganisms)
+        internal (OrganismStruct Left, OrganismStruct Right)[] BreedingPairs_Sequential(ref Span<OrganismStruct> EligibleParentOrganisms)
         {
             int maxPairs = EligibleParentOrganisms.Length;
 
             // create a result array
-            var pairs = new (int Left, int Right)[maxPairs];
+            var pairs = new (OrganismStruct Left, OrganismStruct Right)[maxPairs];
 
             // carve out contiguous blocks of memory for our working set to iterate faster
-            Span<(int Left, int Right)> pairSpan = pairs;
+            Span<(OrganismStruct Left, OrganismStruct Right)> pairSpan = pairs;
 
             for (int i = 0; i < maxPairs; i++)
             {
@@ -265,15 +265,15 @@ namespace NeuroSharp.NEAT
             return pairs;
         }
 
-        internal (int Left, int Right)[] BreedingPairs_XOR(ref Span<int> EligibleParentOrganisms)
+        internal (OrganismStruct Left, OrganismStruct Right)[] BreedingPairs_XOR(ref Span<OrganismStruct> EligibleParentOrganisms)
         {
             int maxPairs = EligibleParentOrganisms.Length;
 
             // create a result array
-            var pairs = new (int Left, int Right)[maxPairs];
+            var pairs = new (OrganismStruct Left, OrganismStruct Right)[maxPairs];
 
             // carve out contiguous blocks of memory for our working set to iterate faster
-            Span<(int Left, int Right)> pairSpan = pairs;
+            Span<(OrganismStruct Left, OrganismStruct Right)> pairSpan = pairs;
 
             for (int i = 0; i < maxPairs; i++)
             {
@@ -283,19 +283,19 @@ namespace NeuroSharp.NEAT
             return pairs;
         }
 
-        internal Span<int> RandomTruncate(ref Span<int> Organisms, out Span<int> RemainingOrganisms)
+        internal Span<OrganismStruct> RandomTruncate(ref Span<OrganismStruct> Organisms, out Span<OrganismStruct> RemainingOrganisms)
         {
-            return BoolTruncate(ref Organisms, (ref int x) => Helpers.NextUDouble() >= 0.5d, out RemainingOrganisms);
+            return BoolTruncate(ref Organisms, (ref OrganismStruct x) => Helpers.Random.NextUDouble() >= 0.5d, out RemainingOrganisms);
         }
 
-        internal Span<int> BoolTruncate(ref Span<int> Organisms, ReferenceFunc<int, bool> Truncator, out Span<int> RemainingOrganisms)
+        internal Span<OrganismStruct> BoolTruncate(ref Span<OrganismStruct> Organisms, ReferenceFunc<OrganismStruct, bool> Truncator, out Span<OrganismStruct> RemainingOrganisms)
         {
-            int[] truncated = Array.Empty<int>();
-            int[] persistent = Array.Empty<int>();
+            OrganismStruct[] truncated = Array.Empty<OrganismStruct>();
+            OrganismStruct[] persistent = Array.Empty<OrganismStruct>();
 
             for (int i = 0; i < Organisms.Length; i++)
             {
-                if (Truncator(ref i))
+                if (Truncator(ref Organisms[i]))
                 {
                     Helpers.Array.AppendValue(ref truncated, ref Organisms[i]);
                 }

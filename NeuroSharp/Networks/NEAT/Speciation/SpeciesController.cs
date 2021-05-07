@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using NeuroSharp.Extensions;
 
 namespace NeuroSharp.NEAT
 {
@@ -295,19 +296,32 @@ namespace NeuroSharp.NEAT
 
             // get the origanisms in the species
             Span<int> organismSpan = new(Species[Fitness.Species]);
-            // get the fitnesses for the origanisms, they should be in order already assuming no body sorted them somehow
 
+            // get the fitnesses for the origanisms, they should be in order already assuming no body sorted them somehow
             double[] fitnesses = Fitness.Fitnesses;
 
+            Span<double> fitnessSpan = fitnesses;
+
+            // convert to structs
+            Span<OrganismStruct> sortedOrganisms = new OrganismStruct[organismSpan.Length];
+
+            for (int i = 0; i < sortedOrganisms.Length; i++)
+            {
+                sortedOrganisms[i] = new OrganismStruct(organismSpan[i], fitnessSpan[i]);
+            }
+
             // sort the organisms by fitness
-            organismSpan.Sort((x, y) => fitnesses[x].CompareTo(fitnesses[y]));
+            sortedOrganisms.Sort((x, y) => x.Fitness.CompareTo(y.Fitness));
 
             // make room for the new organisms that will be produced when we breed the top performers
             // get a list of organisms that should be replaced
-            Span<int> truncatedOrganisms = ReproductionHandler.TruncateSpecies(ref organismSpan, out Span<int> remainingOrganisms);
+            Span<OrganismStruct> truncatedOrganisms = ReproductionHandler.TruncateSpecies(ref sortedOrganisms, out Span<OrganismStruct> remainingOrganisms);
 
             // generate pairs to breed from
-            (int Left, int Right)[] BreedingPairs = ReproductionHandler.GenerateBreedingPairs(ref remainingOrganisms);
+            (OrganismStruct Left, OrganismStruct Right)[] BreedingPairs = ReproductionHandler.GenerateBreedingPairs(ref remainingOrganisms);
+
+            // actually create the new organisms
+
 
             // replace the generation indices with the new organisms
 
@@ -354,14 +368,14 @@ namespace NeuroSharp.NEAT
             return (resultArray, TotalFitness);
         }
 
-        private INeatNetwork CrossNetworks((int NetworkIndex, int Fitness) Left, (int NetworkIndex, int Fitness) Right)
+        private INeatNetwork CrossNetworks(OrganismStruct Left, OrganismStruct Right)
         {
             // get which network has better fitness
             FitnessState comparedState = Left.Fitness > Right.Fitness ? FitnessState.LeftMoreFit : Left.Fitness == Right.Fitness ? FitnessState.EqualFitness : FitnessState.RightMoreFit;
 
-            ref INeatNetwork leftNetwork = ref Generation[Left.NetworkIndex];
+            ref INeatNetwork leftNetwork = ref Generation[Left.Id];
 
-            ref INeatNetwork rightNetwork = ref Generation[Right.NetworkIndex];
+            ref INeatNetwork rightNetwork = ref Generation[Right.Id];
 
             // actually derive the new genome
             IInnovation[] crossedGenes = NetworkComparer.DeriveGenome(leftNetwork, rightNetwork, comparedState);

@@ -174,7 +174,7 @@ namespace NeuroSharp.NEAT
 
             newNetwork.GeneratePhenotype();
 
-            await Helpers.Sleep();
+            await Helpers.Random.Sleep();
 
             return newNetwork;
         }
@@ -242,7 +242,7 @@ namespace NeuroSharp.NEAT
             }
 
             // placeholder for real async stuff
-            await Helpers.Sleep();
+            await Helpers.Random.Sleep();
         }
 
         /// <summary>
