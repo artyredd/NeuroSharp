@@ -1,0 +1,265 @@
+﻿
+@using NeuroSharp.NEAT
+@using System.IO;
+@using System.Threading;
+@using NeuroSharp;
+@code {
+    [Parameter]
+    public int Height { get; set; }
+
+    [Parameter]
+    public int Width { get; set; }
+
+    [Parameter]
+    public string BackgroundColor { get; set; } = Colors.Grey;
+
+    private Canvas2DContext _context { get; set; }
+
+    virtual public void SetContext(Canvas2DContext context)
+    {
+        _context = context;
+    }
+
+    virtual public async Task DrawArrow(float x, float y, float targetX, float targetY, string Color = Colors.Black, float lineWidth = 2f)
+    {
+        var headlen = 10; // length of head in pixels
+        var dx = targetX - x;
+        var dy = targetY - y;
+        var angle = Math.Atan2(dy, dx);
+        await Batch(
+        _context.SetLineWidthAsync(lineWidth),
+        _context.MoveToAsync(x, y),
+        _context.LineToAsync(targetX, targetY),
+        //_context.QuadraticCurveToAsync(targetX - 50, (targetY + y) / 2, targetX, targetY),
+        _context.SetStrokeStyleAsync(Color),
+        _context.StrokeAsync(),
+        _context.MoveToAsync(targetX, targetY),
+        _context.LineToAsync(targetX - headlen * Math.Cos(angle - Math.PI / 6), targetY - headlen * Math.Sin(angle - Math.PI / 6)),
+        _context.MoveToAsync(targetX, targetY),
+        _context.LineToAsync(targetX - headlen * Math.Cos(angle + Math.PI / 6), targetY - headlen * Math.Sin(angle + Math.PI / 6)),
+        _context.SetStrokeStyleAsync(Color),
+        _context.StrokeAsync(),
+        _context.ClosePathAsync()
+        );
+    }
+
+    virtual public async Task DrawCircle(float x, float y, float radius, float width, bool filled = false, string StrokeColor = Colors.Black, string FillColor = Colors.Black)
+    {
+        var tasks = new List<Task>
+{
+        _context.BeginPathAsync(),
+        _context.SetStrokeStyleAsync(StrokeColor),
+        _context.SetLineWidthAsync(width),
+        _context.ArcAsync(x, y, radius, 0, 2 * Math.PI),
+        _context.StrokeAsync()
+        };
+        if (filled)
+        {
+            tasks.Insert(0, _context.SetFillStyleAsync(FillColor));
+            tasks.Insert(4, _context.FillAsync());
+            tasks.Add(_context.ClosePathAsync());
+        }
+        await Batch(
+        tasks.ToArray()
+        );
+    }
+
+    virtual public async Task<double> MeasureText(string text = "Example Text", float size = 10, string Color = Colors.Black, float maxWidth = 50, TextBaseline baseline = TextBaseline.Bottom)
+    {
+        double val = 0d;
+        async Task Measure()
+        {
+            var metric = await _context.MeasureTextAsync(text);
+            val = metric.Width;
+        }
+        await Batch(
+            _context.SetTextBaselineAsync(baseline),
+            _context.SetFontAsync($"{size}px sans-serif"),
+            Measure()
+        );
+        return val;
+    }
+
+    virtual public async Task DrawText(float x, float y, string text = "Example Text", float size = 10, string Color = Colors.Black, float maxWidth = 50, TextBaseline baseline = TextBaseline.Bottom)
+    {
+        await Batch(
+            _context.SetFillStyleAsync(Color),
+            _context.SetTextBaselineAsync(baseline),
+            _context.SetFontAsync($"{size}px sans-serif"),
+            _context.FillTextAsync(text, x, y, maxWidth)
+        );
+    }
+
+    virtual public async Task FillBox(float x, float y, float width, float height, string Color = Colors.Black)
+    {
+        await Batch(
+            _context.SetFillStyleAsync(Color),
+            _context.FillRectAsync(x, y, width, height)
+        );
+    }
+
+    virtual public async Task DrawBox(float x, float y, float width, float height, string Color = Colors.Black, float lineWidth = 2f)
+    {
+        await Batch(
+            _context.SetStrokeStyleAsync(Color),
+            _context.SetLineWidthAsync(lineWidth),
+            _context.StrokeRectAsync(x, y, width, height)
+        );
+    }
+
+    virtual public async Task DrawLine(float x, float y, float targetX, float targetY, string Color = Colors.Black, float lineWidth = 2f)
+    {
+        await Batch(
+        _context.SetStrokeStyleAsync(Color),
+        _context.SetLineWidthAsync(lineWidth),
+        _context.MoveToAsync(x, y),
+        _context.QuadraticCurveToAsync(targetX - 50, (targetY + y) / 2, targetX, targetY),
+        _context.StrokeAsync()
+        );
+    }
+
+    private async Task<(float x, float y)> DrawMatrix(IMatrix<double> SourceMatrix, float x, float y, string title = "", bool fillBackground = false)
+    {
+
+
+        // make a copy of the matrix
+        IMatrix<double> matrix = SourceMatrix.Duplicate();
+
+        // round all the numbers to make it simple to draw them
+        matrix.PerformMemberWise((ref double x) => Math.Round(x, 2));
+
+        float textSize = 30f;
+
+        float trunacateWidth = textSize;
+        string textColor = Colors.Black;
+
+        float horizontalSpacing = textSize;
+        float verticalSpacing = textSize;
+
+
+        (float x, float y) TextOffset = (textSize / 2, textSize / 2);
+
+        // draw the box
+        float width = (matrix.Columns * textSize) + (horizontalSpacing * matrix.Columns);
+        float height = (matrix.Rows * textSize) + (verticalSpacing * matrix.Rows);
+
+        (float x, float y) BottomRightCorner = (x + width, y + height);
+
+        float matrixBoxEdgeWidth = 10f;
+
+        float matrixLineSize = 3f;
+        string matrixColor = Colors.Black;
+
+        float left = x;
+        float right = x + width;
+        float top = y;
+        float bottom = y + height;
+
+        // if tru then fill background
+        if (fillBackground)
+        {
+            await FillBox(x, y, width, height, Colors.Black);
+        }
+
+        // draw the numbers
+
+        (float x, float y) pos = (x, y);
+
+        for (int row = 0; row < matrix.Rows; row++)
+        {
+            pos.y = y + TextOffset.y + (row * (textSize + verticalSpacing));
+            for (int col = 0; col < matrix.Columns; col++)
+            {
+                pos.x = x + TextOffset.x + (col * (trunacateWidth + horizontalSpacing));
+                double val = matrix[row, col];
+
+                string text = Math.Round(val, 2).ToString();
+
+                if (text.Length > 5)
+                {
+                    text = text[^5..];
+                }
+
+                await DrawText(pos.x, pos.y, text, textSize, textColor, trunacateWidth + 5f, TextBaseline.Top);
+            }
+        }
+
+        // draw the title of the matrix
+        float textWidth = (float)await MeasureText(title, textSize);
+        await DrawText(((right + left) / 2) - (textWidth / 2), top, title, textSize, Colors.White, width, TextBaseline.Bottom);
+
+        // draw the left wall
+        await Batch(
+                _context.SetStrokeStyleAsync(matrixColor),
+            _context.SetLineWidthAsync(matrixLineSize),
+            _context.MoveToAsync(left + matrixBoxEdgeWidth, top),
+            _context.LineToAsync(left, top),
+            _context.MoveToAsync(left, top),
+            _context.LineToAsync(left, bottom),
+            _context.MoveToAsync(left, bottom),
+            _context.LineToAsync(left + matrixBoxEdgeWidth, bottom),
+            _context.StrokeAsync()
+        );
+
+        // draw the right wall
+        await Batch(
+                _context.SetStrokeStyleAsync(matrixColor),
+            _context.SetLineWidthAsync(matrixLineSize),
+            _context.MoveToAsync(right - matrixBoxEdgeWidth, top),
+            _context.LineToAsync(right, top),
+            _context.MoveToAsync(right, top),
+            _context.LineToAsync(right, bottom),
+            _context.MoveToAsync(right, bottom),
+            _context.LineToAsync(right - matrixBoxEdgeWidth, bottom),
+            _context.StrokeAsync()
+        );
+
+        return BottomRightCorner;
+    }
+
+    virtual public async Task Batch(params Task[] awaitables)
+    {
+        await _context.BeginBatchAsync();
+        await _context.BeginPathAsync();
+
+        foreach (var item in awaitables)
+        {
+            await item;
+        }
+
+        await _context.ClosePathAsync();
+        await _context.EndBatchAsync();
+    }
+
+    virtual public async Task Clear()
+    {
+        await Batch(
+        _context.SetFillStyleAsync(BackgroundColor),
+        _context.FillRectAsync(0, 0, Width, Height)
+        );
+    }
+
+    virtual public async Task Outline()
+    {
+        await Batch(
+        _context.BeginPathAsync(),
+        _context.SetStrokeStyleAsync("rgb(0,0,0)"),
+        _context.SetLineWidthAsync(10),
+        _context.SetLineJoinAsync(LineJoin.Round),
+        _context.MoveToAsync(0, 0),
+        _context.LineToAsync(Width, 0),
+        _context.LineToAsync(Width, Height),
+        _context.LineToAsync(0, Height),
+        _context.LineToAsync(0, 0),
+        _context.SetLineCapAsync(LineCap.Round),
+        _context.StrokeAsync()
+        );
+    }
+
+    virtual public async Task RedrawCanvas()
+    {
+        if (_context is null) return;
+        await Clear();
+        await Outline();
+    }
+}

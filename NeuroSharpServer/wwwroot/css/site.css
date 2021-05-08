@@ -30,6 +30,10 @@ a, .btn-link {
     color: red;
 }
 
+#components-reconnect-modal {
+    background-color: black !important;
+}
+
 #blazor-error-ui {
     background: lightyellow;
     bottom: 0;
