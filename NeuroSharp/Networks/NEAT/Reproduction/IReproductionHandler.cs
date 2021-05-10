@@ -5,6 +5,8 @@ namespace NeuroSharp.NEAT
     public interface IReproductionHandler
     {
         double CustomOrganismTruncationPercentage { get; set; }
+        OrganismTruncationMethod TrucationMethod { get; set; }
+        OrganismReproductionMethod ReproductionMethod { get; set; }
         ReferenceFunc<OrganismStruct, bool> CustomOrganismTruncater { get; set; }
         ReferenceFunc<ISpeciesFitness<double>, double, SpeciesReproductionRule> SpeciesSelectionFunction { get; set; }
 

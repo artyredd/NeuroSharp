@@ -5,6 +5,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using NeuroSharp.Extensions;
+using System.Reflection;
+using System.Security;
 
 namespace NeuroSharp.NEAT
 {
@@ -12,7 +14,7 @@ namespace NeuroSharp.NEAT
     /// 
     /// </summary>
     /// <typeparam name="T">The class of <see cref="INeatNetwork"/> that should be used for the networks created by this controller</typeparam>
-    public class SpeciesController<T> where T : IInstantiableNetwork<INeatNetwork>, new()
+    public class SpeciesController<T> where T : class, INeatNetwork, new()
     {
         public int InputNodes { get; private set; } = 1;
         public int OutputNodes { get; private set; } = 1;
@@ -55,7 +57,12 @@ namespace NeuroSharp.NEAT
 
         internal int[][] _Species = Array.Empty<int[]>();
 
-        internal T InstantiableNetworkObject = new();
+        public SpeciesController(int InputNodes, int OutputNodes)
+        {
+            this.InputNodes = InputNodes;
+            this.OutputNodes = OutputNodes;
+            ValidateConstructor();
+        }
 
         /// <summary>
         /// Holds the index of the representatives of each species, where the integer at index <c>i</c> is the index in <see cref="Generation"/> that the network that represents species <c>i</c>. 
@@ -87,12 +94,12 @@ namespace NeuroSharp.NEAT
 
             Generation = new INeatNetwork[MaxPopulation];
 
-            T tmp = new();
-
             for (int i = 0; i < MaxPopulation; i++)
             {
-                Generation[i] = await tmp.CreateAsync(InputNodes, OutputNodes);
+                Generation[i] = InstantiateNewNetwork(InputNodes, OutputNodes);
             }
+
+            await Helpers.Random.Sleep();
 
             return GenerationCreationResult.success;
         }
@@ -391,7 +398,7 @@ namespace NeuroSharp.NEAT
             IInnovation[] crossedGenes = NetworkComparer.DeriveGenome(leftNetwork, rightNetwork, comparedState);
 
             // create a new network with that genome
-            INeatNetwork newNetwork = InstantiableNetworkObject.Create(leftNetwork.InputNodes, leftNetwork.OutputNodes, crossedGenes);
+            INeatNetwork newNetwork = InstantiateNewNetwork(leftNetwork.InputNodes, leftNetwork.OutputNodes, crossedGenes);
 
             newNetwork.Name = $"{leftNetwork.Name}:{rightNetwork.Name}:{(int)comparedState}";
 
@@ -462,6 +469,37 @@ namespace NeuroSharp.NEAT
                     AddToSpecies(species, NetworkIndex);
                 }
             }
+        }
+
+        INeatNetwork InstantiateNewNetwork(params object[] Parameters)
+        {
+            return (INeatNetwork)Activator.CreateInstance(typeof(T), Parameters);
+        }
+
+        internal ConstructorInfo ValidateConstructor()
+        {
+            // we should verify if the type provided meets the requirements for compatibility for this controller
+            // it should have a public ctor that matches signature .ctor(int Rows, int Columns, IInovation[] Genome)
+            Type t = typeof(T);
+
+            Type[] requiredTypes = new Type[3];
+
+            // Rows
+            requiredTypes[0] = typeof(int);
+            // Columns
+            requiredTypes[1] = typeof(int);
+            // Derived Genome
+            requiredTypes[2] = typeof(IInnovation[]);
+
+            // intentionally don't catch errors
+            ConstructorInfo ctor = t.GetConstructor(BindingFlags.Instance | BindingFlags.Public, null, requiredTypes, null);
+
+            if (ctor != null)
+            {
+                return ctor;
+            }
+
+            throw Networks.Exceptions.InvalidNeatControllerType(t.ToString());
         }
     }
 }

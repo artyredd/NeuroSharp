@@ -69,15 +69,15 @@ namespace NeuroSharp.NEAT
         /// </code>
         /// </para>
         /// </summary>
-        /// <param name="Fitneses"></param>
+        /// <param name="Fitnesses"></param>
         /// <param name="TotalGenerationFitness"></param>
-        public SpeciesReproductionRule[] SelectUnfitSpecies(ref ISpeciesFitness<double>[] Fitneses, ref double TotalGenerationFitness)
+        public SpeciesReproductionRule[] SelectUnfitSpecies(ref ISpeciesFitness<double>[] Fitnesses, ref double TotalGenerationFitness)
         {
-            SpeciesReproductionRule[] rules = new SpeciesReproductionRule[Fitneses.Length];
+            SpeciesReproductionRule[] rules = new SpeciesReproductionRule[Fitnesses.Length];
 
             Span<SpeciesReproductionRule> speciesRules = new(rules);
 
-            Span<ISpeciesFitness<double>> fitnesses = new(Fitneses);
+            Span<ISpeciesFitness<double>> fitnesses = new(Fitnesses);
 
             for (int i = 0; i < fitnesses.Length; i++)
             {
@@ -132,6 +132,8 @@ namespace NeuroSharp.NEAT
                 case OrganismTruncationMethod.Bool:
                     return BoolTruncate(ref Organisms, CustomOrganismTruncater, out RemainingOrganisms);
             }
+
+            index = index >= Organisms.Length ? Organisms.Length : index <= 0 ? 0 : index;
 
             RemainingOrganisms = Organisms[0..^index];
 
@@ -229,10 +231,10 @@ namespace NeuroSharp.NEAT
             Span<(OrganismStruct Left, OrganismStruct Right)> pairSpan = pairs;
             Span<int> rollSpan = rolls;
 
-            bool random = false;
+            bool random = true;
             for (int i = 0; i < maxPairs; i++)
             {
-                OrganismStruct left = random ? EligibleParentOrganisms[i] : EligibleParentOrganisms[^(i + 1)];
+                OrganismStruct left = random ? EligibleParentOrganisms[i] : EligibleParentOrganisms[^i];
                 OrganismStruct right = EligibleParentOrganisms[rollSpan[i]];
 
                 pairSpan[i] = (left, right);

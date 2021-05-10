@@ -27,6 +27,11 @@ namespace NeuroSharp.NEAT
                    Fitness == other.Fitness;
         }
 
+        public override string ToString()
+        {
+            return $"({Id}) {Math.Round(Fitness,2)}..";
+        }
+
         public override int GetHashCode()
         {
             return HashCode.Combine(Id, Fitness);

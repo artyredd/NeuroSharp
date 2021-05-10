@@ -5,8 +5,8 @@
 
 @inherits CanvasBase
 
-<div class="flex" style=@("max-height: 90vh; overflow-y: clip;")>
-    <div class="d-flex flex-grid my-2 w-100" style="max-height: 45vh; overflow-y: scroll; overflow-x:scroll;">
+<div class="flex" style=@("max-height: 100vh; overflow-y: clip;")>
+    <div class="h-50" style="max-height: 46vh; overflow-y: scroll; overflow-x:scroll;">
         <div>
             <NetworkCanvas Network=@left></NetworkCanvas>
         </div>
@@ -24,7 +24,7 @@
             <BECanvas Width=@Width Height=@Height @ref="_canvasReference"></BECanvas>
         </div>
     </div>
-    <div class="d-inline-flex flex flex-grow-1 mx-2 border border-dark rounded rounded-0 w-100">
+    <div class="d-inline-flex flex flex-grow-1 w-100 h-50">
         <div class="w-25 my-2 mx-2" style="max-height: 400px; overflow-y: scroll;  min-width: 282px; overflow-x: hidden; text-align: center;">
             <div class="btn-group w-100 my-2" role="group" aria-label="Basic example">
                 <button type="button" class="btn btn-outline-primary" @onclick=RedrawCanvas tite="Refresh Screen">
@@ -194,36 +194,39 @@
                 </li>
             </ul>
         </div>
-        <div class="flex my-2 mx-2 w-25 text-center" style="max-height: 400px; overflow-y: no-display;">
-            <div class="flex w-100">
-                <div class="btn-group">
-                    <button class="btn btn-@(buttonTypes[selectedLeftItem % buttonTypes.Length]) btn-lg dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        @((MarkupString)left.Name)
-                    </button>
-                    <ul class="dropdown-menu" style="max-height: 300px; overflow-y: auto; overflow-x: hidden;">
-                        @for (int i = 0; i < networks.Count; i++)
-                        {
-                            int x = i;
-                            <li><button class=@networkButtonColors[x % networkButtonColors.Length] type="button" @onclick="()=>selectedLeftItem = x">@((MarkupString)networks[i].Name)</button></li>
-                        }
-                    </ul>
+        <!--
+            <div class="flex my-2 mx-2 w-25 text-center" style="max-height: 50vh; overflow-y: no-display;">
+                <div class="flex w-100">
+                    <div class="btn-group">
+                        <button class="btn btn-@(buttonTypes[selectedLeftItem % buttonTypes.Length]) btn-lg dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            @((MarkupString)left.Name)
+                        </button>
+                        <ul class="dropdown-menu" style="max-height: 300px; overflow-y: auto; overflow-x: hidden;">
+                            @for (int i = 0; i < networks.Count; i++)
+                            {
+                                int x = i;
+                                <li><button class=@networkButtonColors[x % networkButtonColors.Length] type="button" @onclick="()=>selectedLeftItem = x">@((MarkupString)networks[i].Name)</button></li>
+                            }
+                        </ul>
+                    </div>
+                    <div class="btn-group w-100 my-2" role="group" aria-label="Basic example">
+                        <button type="button" class="btn btn-outline-primary" @onclick=ResetLeft title="Reset Network"><span class="oi oi-reload"></span></button>
+                        <button type="button" class="btn btn-outline-primary" @onclick=MutateLeft title="Mutate Network"><span class="oi oi-bug"></span></button>
+                        <button type="button" class="btn btn-outline-primary" @onclick=AddNodeLeft title="Add Node">&#10010; <span class="oi oi-target"></span></button>
+                        <button type="button" class="btn btn-outline-primary" @onclick=AddConnectionLeft title="Add Connection">&#10010; <span class="oi oi-fork"></span></button>
+                        <button type="button" class="btn btn-outline-primary" @onclick=ShowMatriceLeft title="Show Matrices"><span class="oi oi-grid-three-up"></span></button>
+                    </div>
                 </div>
-                <div class="btn-group w-100 my-2" role="group" aria-label="Basic example">
-                    <button type="button" class="btn btn-outline-primary" @onclick=ResetLeft title="Reset Network"><span class="oi oi-reload"></span></button>
-                    <button type="button" class="btn btn-outline-primary" @onclick=MutateLeft title="Mutate Network"><span class="oi oi-bug"></span></button>
-                    <button type="button" class="btn btn-outline-primary" @onclick=AddNodeLeft title="Add Node">&#10010; <span class="oi oi-target"></span></button>
-                    <button type="button" class="btn btn-outline-primary" @onclick=AddConnectionLeft title="Add Connection">&#10010; <span class="oi oi-fork"></span></button>
-                    <button type="button" class="btn btn-outline-primary" @onclick=ShowMatriceLeft title="Show Matrices"><span class="oi oi-grid-three-up"></span></button>
+                <div class="flex w-100 my-2 text-center" style=@($"max-height: {400-100}px; overflow-y: scroll;")>
+                    @foreach (var item in left.Innovations)
+                    {
+                        <GenoTypeEntry Innovation=@item></GenoTypeEntry>
+                    }
                 </div>
             </div>
-            <div class="flex w-100 my-2 text-center" style=@($"max-height: {400-100}px; overflow-y: scroll;")>
-                @foreach (var item in left.Innovations)
-                {
-                    <GenoTypeEntry Innovation=@item></GenoTypeEntry>
-                }
-            </div>
-        </div>
-        <div class="flex my-2 mx-2 w-25 text-center" style="max-height: 400px; overflow-y: no-display;">
+        </ -->
+        <SpeciesControllerPanel Controller=@controller ResetController=ResetController></SpeciesControllerPanel>
+        <div class="flex my-2 mx-2 w-25 text-center" style="max-height: 50vh; overflow-y: no-display;">
             <div class="flex w-100">
                 <div class="btn-group">
                     <button class="btn btn-@(buttonTypes[selectedRightItem % buttonTypes.Length]) btn-lg dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -252,7 +255,7 @@
                 }
             </div>
         </div>
-        <div class="w-25" style="max-height: 400px; overflow-y: scroll; height: 400px; min-width: 300px;">
+        <div class="w-25" style="max-height: 50vh; overflow-y: scroll; height: 400px; min-width: 300px;">
             <h2 class="text-center">Console</h2>
             <ul class="list-group list-group-flush w-100">
                 @foreach (var item in console)
@@ -266,7 +269,7 @@
 
 @code {
 
-    SpeciesController<NeatNueralNetwork> controller = new();
+    SpeciesController<NeatNueralNetwork> controller = new(3, 2);
 
     List<NeatNueralNetwork> networks = new()
     {
@@ -655,6 +658,13 @@
     private async Task AddNodeLeft() => await AddNode(left);
 
     private async Task AddConnectionLeft() => await AddConnection(left);
+
+    public async Task ResetController()
+    {
+        controller = new(startingInputNodes, startingOutputNodes);
+        await InvokeAsync(() => StateHasChanged());
+
+    }
 
     public override async Task RedrawCanvas()
     {

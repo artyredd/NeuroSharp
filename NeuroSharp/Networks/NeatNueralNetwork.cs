@@ -22,6 +22,8 @@ namespace NeuroSharp.NEAT
             this.Mutater.InitializeConnections(this);
         }
 
+        public NeatNueralNetwork(int InputNodes, int OutputNodes, IInnovation[] Genome) => Create(InputNodes, OutputNodes, Genome);
+
         public NeatNueralNetwork()
         {
 
