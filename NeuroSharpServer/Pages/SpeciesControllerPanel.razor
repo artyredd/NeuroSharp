@@ -23,7 +23,7 @@
     <div class="card-body">
         @if (activeTab is 0)
         {
-            <ListGroup Title="Generation Summary" Items=@SummaryList Colors=@(new BootstrapColor[] { BootstrapColor.warning}) Callbacks=@SummaryCallbacks></ListGroup>
+            <ListGroup Title="Network Controller Summary" Items=@SummaryList Colors=@(new BootstrapColor[] { BootstrapColor.warning}) Callbacks=@SummaryCallbacks></ListGroup>
         }
         @if (activeTab is 1)
         {
@@ -55,7 +55,7 @@
 
     Func<Task>[] SummaryCallbacks => new Func<Task>[]{
         null,
-        async() => { await NeuroSharp.Helpers.Random.Sleep(); activeTab = 1; },
+        async() => { await NeuroSharp.Helpers.Random.Sleep(); activeTab = 2; },
         null,
         async ()=> await ResetController?.Invoke()
     };

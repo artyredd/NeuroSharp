@@ -10,7 +10,7 @@ using NeuroSharp.Bench;
 using System;
 
 BenchmarkRunner.Run(
-    typeof(ArrayRemoveVsCastToListRemove),
+    typeof(LinqVsRemove),
     DefaultConfig.Instance
     .AddDiagnoser(MemoryDiagnoser.Default)
     .AddExporter(RPlotExporter.Default)

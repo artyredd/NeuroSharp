@@ -1,0 +1,164 @@
+﻿<div class="card text-center @Class" style=@Style>
+    <div class="card-header">
+        <ul class="nav nav-pills card-header-pills">
+            @for (int i = 0; i < Tabs.Count; i++)
+            {
+                TabItem tab = Tabs[i];
+
+                if (tab.Enabled is false)
+                {
+                    <li class="nav-item">
+                        <button class="nav-link disabled" disabled>@tab.Title</button>
+                    </li>
+                }
+                else if (ActiveTab == i)
+                {
+                    <li class="nav-item">
+                        <button class="nav-link active" @onclick=tab.Invoke>@tab.Title</button>
+                    </li>
+                }
+                else
+                {
+                    <li class="nav-item">
+                        <button class="nav-link" @onclick=tab.Invoke>@tab.Title</button>
+                    </li>
+                }
+            }
+        </ul>
+    </div>
+    <div class="card-body @ContentClass" style=@($"{ContentStyle} {( Tabs.Count > 0 ? Tabs[ActiveTab]?.Style : "")}" )>
+        @ChildContent
+    </div>
+</div>
+@code {
+    public int ActiveTab = 0;
+
+    [Parameter]
+    public string Class { get; set; } = "";
+
+    [Parameter]
+    public string Style { get; set; } = "";
+
+    [Parameter]
+    public string ContentClass { get; set; } = "";
+
+    [Parameter]
+    public string ContentStyle { get; set; } = "";
+
+    private List<TabItem> Tabs { get; set; } = new();
+
+    private HashSet<string> Titles { get; set; } = new();
+
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+
+    private class TabItem
+    {
+        public MarkupString Title { get; set; } = (MarkupString)"Untitled";
+
+        public event Func<Task> OnTitleClickAsync = null;
+        public event Action OnTitleClick = null;
+
+        public string Style { get; set; } = "";
+
+        public bool Enabled { get; set; } = true;
+
+        public bool UseAsyncEvent = false;
+
+        public TabItem(string Title)
+        {
+            this.Title = (MarkupString)Title;
+        }
+
+        public async Task Invoke()
+        {
+            if (UseAsyncEvent)
+            {
+                await OnTitleClickAsync?.Invoke();
+            }
+
+            OnTitleClick?.Invoke();
+        }
+    }
+
+    public void AddTab(string title)
+    {
+        if (Titles.Add(title))
+        {
+            var tab = new TabItem(title);
+
+            AddTab(tab);
+        }
+    }
+    public void AddTab(string title, string style)
+    {
+        if (Titles.Add(title))
+        {
+            var tab = new TabItem(title)
+            {
+                Style = style
+            };
+
+            AddTab(tab);
+        }
+    }
+    public void AddTab(string title, string style, Action OnClick)
+    {
+        if (Titles.Add(title))
+        {
+            var tab = new TabItem(title)
+            {
+                Style = style
+            };
+            tab.OnTitleClick += OnClick;
+
+            AddTab(tab);
+        }
+    }
+    public void AddTab(string title, Action OnClick)
+    {
+        if (Titles.Add(title))
+        {
+            var tab = new TabItem(title);
+
+            tab.OnTitleClick += OnClick;
+
+            AddTab(tab);
+        }
+    }
+    public void AddTab(string title, string style, Func<Task> OnClickAsync)
+    {
+        if (Titles.Add(title))
+        {
+            var tab = new TabItem(title) { Style = style };
+
+            tab.OnTitleClickAsync += OnClickAsync;
+            tab.UseAsyncEvent = true;
+
+            AddTab(tab);
+        }
+    }
+    public void AddTab(string title, Func<Task> OnClickAsync)
+    {
+        if (Titles.Add(title))
+        {
+            var tab = new TabItem(title);
+
+            tab.OnTitleClickAsync += OnClickAsync;
+            tab.UseAsyncEvent = true;
+
+            AddTab(tab);
+        }
+    }
+    private void AddTab(TabItem item)
+    {
+        lock (Tabs)
+        {
+            int index = Tabs.Count;
+
+            item.OnTitleClick += () => ActiveTab = index;
+
+            Tabs.Add(item);
+        }
+    }
+}

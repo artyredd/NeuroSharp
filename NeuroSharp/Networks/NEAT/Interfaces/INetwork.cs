@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 
 namespace NeuroSharp.NEAT
 {
@@ -12,6 +13,9 @@ namespace NeuroSharp.NEAT
     public interface INetwork<T, U>
     {
         string Name { get; set; }
+
+        Guid Id { get; set; }
+
         int InputNodes { get; }
 
         int OutputNodes { get; }

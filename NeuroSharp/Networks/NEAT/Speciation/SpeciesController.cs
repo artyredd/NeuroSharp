@@ -80,6 +80,11 @@ namespace NeuroSharp.NEAT
         }
         internal int[] _SpeciesRepresentatives = Array.Empty<int>();
 
+        /// <summary>
+        /// Contains the indicies that are available to be populated in the generation array
+        /// </summary>
+        private Queue<int> AvailableGenerationIndices = new();
+
         private readonly SemaphoreSlim SpeciesLock = new(1, 1);
         private readonly SemaphoreSlim GenerationLock = new(1, 1);
 
@@ -107,7 +112,11 @@ namespace NeuroSharp.NEAT
         public async Task SpeciateGeneration()
         {
             // this is to remove the warning without pragma becuase i will forget otherwise
-            await Task.Run(() => null);
+            await Helpers.Random.Sleep();
+
+            // clear the old values
+            _SpeciesRepresentatives = Array.Empty<int>();
+            _Species = Array.Empty<int[]>();
 
             // iterate through the generation and speciate them
             for (int i = 1; i < Generation.Length; i++)
@@ -213,6 +222,9 @@ namespace NeuroSharp.NEAT
 
             await Task.Run(() => ReproduceGeneration(ref Fitnesses, ref rules));
             await Task.Run(() => MutateGeneration(ref Fitnesses, ref rules));
+
+            // now that we have reproduced and mutated we should speciate the new organisms
+            await SpeciateGeneration();
         }
 
         private void ReproduceGeneration(ref ISpeciesFitness<double>[] Fitnesses, ref SpeciesReproductionRule[] rules)
@@ -220,6 +232,7 @@ namespace NeuroSharp.NEAT
             // go through the species list and if they are supposed to reproduce kill lower performing children and back-fill with crossed children
             Span<ISpeciesFitness<double>> fitnessSpan = new(Fitnesses);
             Span<SpeciesReproductionRule> ruleSpan = new(rules);
+
             for (int i = 0; i < fitnessSpan.Length; i++)
             {
                 ReproduceSpecies(ref fitnessSpan[i], ref ruleSpan[i]);
@@ -267,7 +280,7 @@ namespace NeuroSharp.NEAT
             }
 
             // sort the organisms by fitness
-            sortedOrganisms.Sort((x, y) => x.Fitness.CompareTo(y.Fitness));
+            sortedOrganisms.Sort((x, y) => y.Fitness.CompareTo(x.Fitness));
 
             // make room for the new organisms that will be produced when we breed the top performers
             // get a list of organisms that should be replaced
@@ -310,7 +323,9 @@ namespace NeuroSharp.NEAT
             for (int i = 0; i < truncatedOrganisms.Length; i++)
             {
                 // create new organism
-                var newNetwork = CrossNetworks(ref breedingPairSpan[i].Left, ref breedingPairSpan[i].Right);
+                int index = i % breedingPairSpan.Length;
+
+                var newNetwork = CrossNetworks(ref breedingPairSpan[index].Left, ref breedingPairSpan[index].Right);
 
                 int id = truncatedOrganisms[i].Id;
 
@@ -325,32 +340,50 @@ namespace NeuroSharp.NEAT
                     GenerationLock.Release();
                 }
             }
-
-            // speciate the new organisms
-            SpeciesLock.Wait();
-            try
-            {
-                for (int i = 0; i < truncatedOrganisms.Length; i++)
-                {
-                    int index = truncatedOrganisms[i].Id;
-                    SpeciateOrganism(ref index);
-                }
-            }
-            finally
-            {
-                SpeciesLock.Release();
-            }
-
         }
 
         private void MutateSpecies(int SpeciesIndex, ref SpeciesReproductionRule rule)
         {
-            throw new NotImplementedException();
+            switch (rule)
+            {
+                case SpeciesReproductionRule.Allow:
+                    break;
+                case SpeciesReproductionRule.PreventMutation:
+                    return;
+                case SpeciesReproductionRule.Prohibit:
+                    return;
+                case SpeciesReproductionRule.ProhibitWithMutation:
+                    break;
+                case SpeciesReproductionRule.Random:
+                    break;
+                case SpeciesReproductionRule.Remove:
+                    return;
+            }
+
+            Span<int> organisms = _Species[SpeciesIndex];
+
+            for (int i = 0; i < organisms.Length; i++)
+            {
+                Generation[organisms[i]].Mutate();
+            }
         }
 
         private void RemoveSpecies(int SpeciesIndex)
         {
-            throw new NotImplementedException();
+            // mark the indices in the generation array as being replaceable
+            // remove the species from the representative list
+            lock (_Species)
+            {
+                // mark all the species as being available
+                Span<int> species = _Species[SpeciesIndex];
+                for (int i = 0; i < species.Length; i++)
+                {
+                    AvailableGenerationIndices.Enqueue(species[i]);
+                }
+
+                // remove the species from the species array
+                Helpers.Array.RemoveIndex(ref _Species, SpeciesIndex);
+            }
         }
 
         /// <summary>
@@ -398,7 +431,9 @@ namespace NeuroSharp.NEAT
             IInnovation[] crossedGenes = NetworkComparer.DeriveGenome(leftNetwork, rightNetwork, comparedState);
 
             // create a new network with that genome
-            INeatNetwork newNetwork = InstantiateNewNetwork(leftNetwork.InputNodes, leftNetwork.OutputNodes, crossedGenes);
+            INeatNetwork newNetwork = InstantiateNewNetwork();
+
+            newNetwork.ImportGenome(InputNodes, OutputNodes, crossedGenes);
 
             newNetwork.Name = $"{leftNetwork.Name}:{rightNetwork.Name}:{(int)comparedState}";
 
@@ -419,24 +454,16 @@ namespace NeuroSharp.NEAT
                     return;
                 }
 
-                int len = Species[index].Length;
-
-                Array.Resize(ref Species[index], len + 1);
-
-                Species[index][len] = value;
+                Helpers.Array.AppendValue(ref _Species[index], ref value);
             }
 
             void CreateSpecies(int representativeIndex)
             {
-                Array.Resize(ref _Species, Species.Length + 1);
+                int[] newSpecies = { representativeIndex };
 
-                AddToSpecies(Species.Length - 1, representativeIndex);
+                Helpers.Array.AppendValue(ref _Species, ref newSpecies);
 
-                int len = SpeciesRepresentatives.Length;
-
-                Array.Resize(ref _SpeciesRepresentatives, len + 1);
-
-                SpeciesRepresentatives[len] = representativeIndex;
+                Helpers.Array.AppendValue(ref _SpeciesRepresentatives, ref representativeIndex);
             }
 
             // determine if there is already species generated
@@ -444,10 +471,14 @@ namespace NeuroSharp.NEAT
             {
                 // set the first species as the first network, which would be just as random as randomly selecting a network from generation
                 CreateSpecies(0);
-                return;
             }
 
             ref INeatNetwork left = ref Generation[NetworkIndex];
+
+            if (left.TopologyChanged)
+            {
+                left.GeneratePhenotype();
+            }
 
             // compare each element to each species, if it is above the compatibility threashold then they should be their own species, it is within the threshold then is should be added as a member to that species
             Span<int> representatives = SpeciesRepresentatives;
@@ -456,17 +487,25 @@ namespace NeuroSharp.NEAT
             {
                 ref INeatNetwork right = ref Generation[representatives[species]];
 
+                // make sure the topologies are generated before we try to compare them
+                if (right.TopologyChanged)
+                {
+                    right.GeneratePhenotype();
+                }
+
                 double compatibility = NetworkComparer.CalculateCompatibility(left, right);
 
                 if (compatibility > CompatibilityThreashold && species == SpeciesRepresentatives.Length - 1)
                 {
                     // if we are at the end of the list and we havent matched with any previous then we should be our own species
                     CreateSpecies(NetworkIndex);
+                    return;
                 }
-                else
+                else if (compatibility <= CompatibilityThreashold)
                 {
                     // since we are compatible with that species we should add ourselfs to that list
                     AddToSpecies(species, NetworkIndex);
+                    return;
                 }
             }
         }

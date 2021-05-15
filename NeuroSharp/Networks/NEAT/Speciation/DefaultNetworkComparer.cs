@@ -41,7 +41,7 @@ namespace NeuroSharp.NEAT
 
             disjoint /= N;
 
-            return excess + disjoint + (WeightCoefficient * averageWeight);
+            return Math.Abs(excess + disjoint + (WeightCoefficient * averageWeight));
         }
 
         public VerboseNetworkCompatibilityBreakdown GenerateVerboseCompatibility(INeatNetwork left, INeatNetwork right)
@@ -303,13 +303,16 @@ namespace NeuroSharp.NEAT
 
             Span<IInnovation> leftInnovations = new(left.Innovations);
 
+            HashSet<string> AlignedHashes = new();
+
             int index = 0;
 
             foreach (var item in leftInnovations)
             {
                 index++;
+                string hash = item.Hash();
                 // check to see if the innovation is contained in both networks, if it is, then it is an aligned gene
-                if (right.InnovationHashes.Contains(item.Hash()))
+                if (right.InnovationHashes.Contains(hash) && AlignedHashes.Add(hash))
                 {
                     // since the hash is in the others list then its aligned
                     Array.Resize(ref Aligned, ++AlignedIndex);
@@ -344,12 +347,13 @@ namespace NeuroSharp.NEAT
             index = 0;
             AlignedIndex = 1;
             ExcessIndex = 0;
-
+            AlignedHashes.Clear();
             foreach (var item in rightInnovations)
             {
                 index++;
+                string hash = item.Hash();
                 // check to see if the innovation is contained in both networks, if it is, then it is an aligned gene
-                if (left.InnovationHashes.Contains(item.Hash()))
+                if (left.InnovationHashes.Contains(hash) && AlignedHashes.Add(hash))
                 {
                     // since the hash is in the others list then its aligned
                     Aligned[AlignedIndex] = item;

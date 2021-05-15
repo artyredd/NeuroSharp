@@ -3,6 +3,8 @@
 @using System.IO;
 @using System.Threading;
 @using NeuroSharp;
+@using System.Runtime.CompilerServices;
+
 @code {
     [Parameter]
     public int Height { get; set; }
@@ -219,6 +221,12 @@
 
     virtual public async Task Batch(params Task[] awaitables)
     {
+        if (_context is null)
+        {
+            Console.WriteLine("_context is null, failed to draw batch call");
+            return;
+        }
+
         await _context.BeginBatchAsync();
         await _context.BeginPathAsync();
 
@@ -236,24 +244,24 @@
         await Batch(
         _context.SetFillStyleAsync(BackgroundColor),
         _context.FillRectAsync(0, 0, Width, Height)
-        );
+    );
     }
 
     virtual public async Task Outline()
     {
         await Batch(
-        _context.BeginPathAsync(),
-        _context.SetStrokeStyleAsync("rgb(0,0,0)"),
-        _context.SetLineWidthAsync(10),
-        _context.SetLineJoinAsync(LineJoin.Round),
-        _context.MoveToAsync(0, 0),
-        _context.LineToAsync(Width, 0),
-        _context.LineToAsync(Width, Height),
-        _context.LineToAsync(0, Height),
-        _context.LineToAsync(0, 0),
-        _context.SetLineCapAsync(LineCap.Round),
-        _context.StrokeAsync()
-        );
+    _context.BeginPathAsync(),
+    _context.SetStrokeStyleAsync("rgb(0,0,0)"),
+    _context.SetLineWidthAsync(10),
+    _context.SetLineJoinAsync(LineJoin.Round),
+    _context.MoveToAsync(0, 0),
+    _context.LineToAsync(Width, 0),
+    _context.LineToAsync(Width, Height),
+    _context.LineToAsync(0, Height),
+    _context.LineToAsync(0, 0),
+    _context.SetLineCapAsync(LineCap.Round),
+    _context.StrokeAsync()
+    );
     }
 
     virtual public async Task RedrawCanvas()

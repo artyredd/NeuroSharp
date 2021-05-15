@@ -5,13 +5,18 @@
     }
     @for (int i = 0; i < Items.Length; i++)
     {
-        string text = Items[i];
+        string text = Items[i].ToString();
 
         BootstrapColor color = i >= Colors.Length ? default : Colors[i];
 
         string colorClass = "";
 
-        if (color != BootstrapColor.none)
+        if (Stripe)
+        {
+            colorClass = $"list-group-item-{(stripeToggle ? "secondary" : "")}";
+            stripeToggle = !stripeToggle;
+        }
+        else if (color != BootstrapColor.none)
         {
             colorClass = $"list-group-item-action-{color}";
         }
@@ -31,7 +36,7 @@
 
 @code {
     [Parameter]
-    public string[] Items { get; set; } = { "Example Text" };
+    public object[] Items { get; set; } = Array.Empty<object>();
 
     [Parameter]
     public BootstrapColor[] Colors { get; set; } = Array.Empty<BootstrapColor>();
@@ -44,6 +49,11 @@
 
     [Parameter]
     public string Title { get; set; }
+
+    [Parameter]
+    public bool Stripe { get; set; } = false;
+
+    private bool stripeToggle = false;
 
     Func<Task> DefaultTask = async () => { await NeuroSharp.Helpers.Random.Sleep(); };
 }

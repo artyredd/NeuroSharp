@@ -173,11 +173,18 @@
             return;
         }
 
-        (Width, Height) = CalculateSize(Network);
+        try
+        {
+            (Width, Height) = CalculateSize(Network);
 
-        await Clear();
+            await Clear();
 
-        await DrawPhenotype((NeatNueralNetwork)Network, 0, 0);
+            await DrawPhenotype((NeatNueralNetwork)Network, 0, 0);
+        }
+        catch (Microsoft.JSInterop.JSException e)
+        {
+            Console.WriteLine(e.StackTrace);
+        }
     }
 
     protected override async Task OnInitializedAsync()
@@ -194,8 +201,6 @@
             this._context = await this._canvasReference.CreateCanvas2DAsync();
 
             base.SetContext(_context);
-
-            await RedrawCanvas();
 
             await InvokeAsync(() => StateHasChanged());
         }

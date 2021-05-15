@@ -395,6 +395,75 @@ namespace NeuroSharp.Helpers
             return AppendValue(ref array, ref value);
         }
 
+        /// <summary>
+        /// Shifts the value to the right and truncates the array
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="array"></param>
+        /// <param name="valueToRemove"></param>
+        /// <returns></returns>
+        public static ref T[] RemoveValue<T>(ref T[] array, ref T valueToRemove) where T : IComparable<T>, IEquatable<T>
+        {
+            Span<T> arrSpan = array;
+
+            int lastIndex = arrSpan.Length - 1;
+
+            bool foundValue = false;
+
+            if (arrSpan[lastIndex].Equals(valueToRemove))
+            {
+                foundValue = true;
+            }
+            else
+            {
+                for (int i = 0; i < lastIndex; i++)
+                {
+                    ref T key = ref arrSpan[i];
+
+                    if (foundValue || key.Equals(valueToRemove))
+                    {
+                        foundValue = true;
+                        // shift the value to the right
+                        key = arrSpan[i + 1];
+                    }
+                }
+            }
+
+            if (foundValue)
+            {
+                // truncate the array
+                System.Array.Resize(ref array, lastIndex);
+            }
+
+            return ref array;
+        }
+
+        /// <summary>
+        /// Shifts the value to the right and truncates the array
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="array"></param>
+        /// <param name="valueToRemove"></param>
+        /// <returns></returns>
+        public static ref T[] RemoveIndex<T>(ref T[] array, int index)
+        {
+            Span<T> arrSpan = array;
+
+            int lastIndex = arrSpan.Length - 1;
+
+            for (int i = index; i < lastIndex; i++)
+            {
+                ref T key = ref arrSpan[i];
+
+                key = arrSpan[i + 1];
+            }
+
+            // truncate the array
+            System.Array.Resize(ref array, lastIndex);
+
+            return ref array;
+        }
+
         public static ref T[] RemoveValues<T>(ref T[] array, ref Span<T> Values) where T : IComparable<T>, IEquatable<T>
         {
             int length = array.Length;

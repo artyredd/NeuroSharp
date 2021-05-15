@@ -21,6 +21,8 @@ namespace NeuroSharp.NEAT
 
         Task AddInnovation(IInnovation innovation);
 
+        Task<INeatNetwork> ImportGenome(int InputNodes, int OutputNodes, IInnovation[] Genome);
+
         public ushort IncrementNextNodeId();
 
         public ushort DecrementNextNodeId();

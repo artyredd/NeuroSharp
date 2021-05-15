@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,6 +16,7 @@ namespace NeuroSharp.NEAT
         /// <returns></returns>
         public string Hash(IInnovation innovation) => Hash(innovation.InputNode, innovation.OutputNode);
 
+        [DebuggerHidden]
         public string Hash(int InputNode, int OutputNode)
         {
             // this explicitly generates a hash that encodes this innvotation excluding the weight

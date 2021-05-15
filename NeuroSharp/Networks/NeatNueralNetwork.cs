@@ -14,6 +14,8 @@ namespace NeuroSharp.NEAT
     {
         public string Name { get; set; } = "";
 
+        public Guid Id { get; set; } = Guid.NewGuid();
+
         public NeatNueralNetwork(int InputNodes, int OutputNodes)
         {
             this.InputNodes = InputNodes;
@@ -128,6 +130,30 @@ namespace NeuroSharp.NEAT
         /// </summary>
         public HashSet<string> InnovationHashes { get; init; } = new();
 
+        public async Task<INeatNetwork> ImportGenome(int InputNodes, int OutputNodes, IInnovation[] Genome)
+        {
+            this.InputNodes = InputNodes;
+            this.OutputNodes = OutputNodes;
+
+            this.Reset();
+
+            // import the innovations
+            for (int i = 0; i < Genome.Length; i++)
+            {
+                string hash = Genome[i].Hash();
+                if (this.InnovationHashes.Add(hash))
+                {
+                    await AddInnovation(Genome[i]);
+                }
+            }
+
+            this.Innovations = Genome;
+
+            this.GeneratePhenotype();
+
+            return this;
+        }
+
         public INeatNetwork Create(int InputNodes, int OutputNodes) => CreateAsync(InputNodes, OutputNodes).Result;
 
         public INeatNetwork Create(int InputNodes, int OutputNodes, IInnovation[] Genome) => CreateAsync(InputNodes, OutputNodes, Genome).Result;
@@ -173,6 +199,8 @@ namespace NeuroSharp.NEAT
                     await newNetwork.AddInnovation(Genome[i]);
                 }
             }
+
+            newNetwork.Innovations = Genome;
 
             newNetwork.GeneratePhenotype();
 
