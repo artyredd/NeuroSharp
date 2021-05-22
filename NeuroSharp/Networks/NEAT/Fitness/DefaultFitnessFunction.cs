@@ -109,5 +109,10 @@ namespace NeuroSharp.NEAT
             }
             return sum;
         }
+
+        public double AdjustOrganismFitness(ref double Fitness, ref int SpeciesSize)
+        {
+            return Fitness / SpeciesSize;
+        }
     }
 }

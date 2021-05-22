@@ -2,6 +2,8 @@
 @using System.IO;
 @using System.Threading;
 @using NeuroSharp;
+@using System.Linq;
+@using NeuroSharpServer.Pages;
 
 <div class="flex" style=@("max-height: 90vh; max-width: 80vw; overflow-y: scroll;overflow-x: scroll;")>
     <TabGroup Class="" Style="overflow-x: scroll; min-height: 90vh;"
@@ -18,415 +20,415 @@
             switch (TabGroupRef.ActiveTab)
             {
                 case 0:
-                    <div class="btn-group">
-                        <button class="btn btn-@(buttonTypes[selectedRightItem % buttonTypes.Length]) btn-lg dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            @((MarkupString)right.Name)
-                        </button>
-                        <ul class="dropdown-menu" style="max-height: 300px; overflow-y: auto; overflow-x: hidden;">
-                            @for (int i = 0; i < controller.Generation.Length; i++)
+            <div class="btn-group">
+                <button class="btn btn-@(buttonTypes[selectedRightItem % buttonTypes.Length]) btn-lg dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    @((MarkupString)right.Name)
+                </button>
+                <ul class="dropdown-menu" style="max-height: 300px; overflow-y: auto; overflow-x: hidden;">
+                    @for (int i = 0; i < controller.Generation.Length; i++)
                             {
                                 int x = i;
-                                <li>
-                                    <button class=@networkButtonColors[x % networkButtonColors.Length] type="button" @onclick="()=>selectedRightItem = x">@((MarkupString)controller.Generation[i].Name)</button>
-                                </li>
+                    <li>
+                        <button class=@networkButtonColors[x % networkButtonColors.Length] type="button" @onclick="()=>selectedRightItem = x">@((MarkupString)controller.Generation[i].Name)</button>
+                    </li>
                             }
-                        </ul>
-                    </div>
-                    <div class="btn-group w-100 my-2" role="group" aria-label="Basic example">
-                        <button type="button" class="btn btn-outline-primary" @onclick=ResetRight title="Reset Network"><span class="oi oi-reload"></span></button>
-                        <button type="button" class="btn btn-outline-primary" @onclick=MutateRight title="Mutate Network"><span class="oi oi-bug"></span></button>
-                        <button type="button" class="btn btn-outline-primary" @onclick=AddNodeRight title="Add Node">&#10010;  <span class="oi oi-target"></span></button>
-                        <button type="button" class="btn btn-outline-primary" @onclick=AddConnectionRight title="Add Connection">&#10010; <span class="oi oi-fork"></span></button>
-                        <button type="button" class="btn btn-outline-primary" @onclick=ShowMatriceRight title="Show Matrices"><span class="oi oi-grid-three-up"></span></button>
-                    </div>
+                </ul>
+            </div>
+            <div class="btn-group w-100 my-2" role="group" aria-label="Basic example">
+                <button type="button" class="btn btn-outline-primary" @onclick=ResetRight title="Reset Network"><span class="oi oi-reload"></span></button>
+                <button type="button" class="btn btn-outline-primary" @onclick=MutateRight title="Mutate Network"><span class="oi oi-bug"></span></button>
+                <button type="button" class="btn btn-outline-primary" @onclick=AddNodeRight title="Add Node">&#10010;  <span class="oi oi-target"></span></button>
+                <button type="button" class="btn btn-outline-primary" @onclick=AddConnectionRight title="Add Connection">&#10010; <span class="oi oi-fork"></span></button>
+                <button type="button" class="btn btn-outline-primary" @onclick=ShowMatriceRight title="Show Matrices"><span class="oi oi-grid-three-up"></span></button>
+            </div>
 
-                    <TabGroup @ref=@SelectedNetworkTabGroup>
-                        @{
+            <TabGroup @ref=@SelectedNetworkTabGroup>
+                @{
                             SelectedNetworkTabGroup.AddTab("View");
                             SelectedNetworkTabGroup.AddTab("Genotype", "text-align: left;");
                             SelectedNetworkTabGroup.AddTab("Matrices");
                             switch (SelectedNetworkTabGroup.ActiveTab)
                             {
                                 case 0:
-                                    <NetworkCanvas Network=@right></NetworkCanvas>
+                    <NetworkCanvas Network=@right></NetworkCanvas>
                                     break;
                                 case 1:
-                                    @foreach (var item in right.Innovations)
+                    @foreach (var item in right.Innovations)
                                     {
-                                        <GenoTypeEntry Innovation=@item></GenoTypeEntry>
+                    <GenoTypeEntry Innovation=@item></GenoTypeEntry>
                                     }
                                     break;
                                 case 2:
                                     foreach (var item in right.Matrices)
                                     {
                                         IMatrix<double> matrix = item;
-                                        <div class="mx-2 my-2">
-                                            <MatrixCanvas Matrix=matrix BackgroundColor=@Colors.White FillMatrixBackground=true></MatrixCanvas>
-                                        </div>
+                    <div class="mx-2 my-2">
+                        <NeuroSharpServer.Pages.MatrixCanvas Matrix=@matrix BackgroundColor=@Colors.White FillMatrixBackground=true></NeuroSharpServer.Pages.MatrixCanvas>
+                    </div>
                                     }
                                     break;
                             }
-                        }
-                    </TabGroup>
+                }
+            </TabGroup>
                     break;
                 case 1:
-                    <div class="" style="overflow-y: scroll;  min-width: 282px; overflow-x: hidden; text-align: center;">
-                        <div class="btn-group w-100 my-2" role="group" aria-label="Basic example">
-                            <button type="button" class="btn btn-outline-primary" @onclick=RedrawCanvas tite="Refresh Screen">
-                                <div>
-                                    <span class="oi oi-reload"></span>
-                                    <span class="oi oi-brush"></span>
-                                </div>
-                                Refresh
-                            </button>
-                            <button type="button" class="btn btn-outline-primary" @onclick=ResetAll title="Reset All Networks">
-                                <div>
-                                    <span class="oi oi-reload"></span>
-                                    <span class="oi oi-fork"></span>
-                                </div>
-                                Reset Networks
-                            </button>
-                            <button type="button" class="btn btn-outline-primary" @onclick=ClearConsole title="Clear Console">
-                                <div>
-                                    <span class="oi oi-reload"></span>
-                                    <span class="oi oi-terminal"></span>
-                                </div>
-                                Clear Console
-                            </button>
+            <div class="" style="overflow-y: scroll;  min-width: 282px; overflow-x: hidden; text-align: center;">
+                <div class="btn-group w-100 my-2" role="group" aria-label="Basic example">
+                    <button type="button" class="btn btn-outline-primary" @onclick=RedrawCanvas tite="Refresh Screen">
+                        <div>
+                            <span class="oi oi-reload"></span>
+                            <span class="oi oi-brush"></span>
                         </div>
-                        <ul class="list-group my-4" style="width: 97%; text-align: center;">
-                            <li class="list-group-item list-group-item-secondary">
-                                <h4>Species Controller</h4>
-                            </li>
-                            <li class="list-group-item align-items-center form-group">
-                                <div class="btn-group w-100 my-2" role="group" aria-label="Basic example">
-                                    <button type="button" class="btn btn-outline-primary" @onclick=RedrawCanvas tite="Refresh Screen">
-                                        Reset
-                                    </button>
-                                    <button type="button" class="btn btn-outline-primary" @onclick=controller.SpeciateGeneration title="Speciate">
-                                        Speciate
-                                    </button>
-                                    <button type="button" class="btn btn-outline-primary">
-                                        Evaluate
-                                    </button>
-                                </div>
-                            </li>
-                        </ul>
-                        <ul class="list-group my-4" style="width: 97%; text-align: center;">
-                            <li class="list-group-item list-group-item-secondary">
-                                <h4>Breeding</h4>
-                            </li>
-                            <li class="list-group-item align-items-center form-group">
-                                <div class="btn-group w-100 my-2" role="group" aria-label="Basic example">
-                                    <button type="button" class="btn btn-outline-primary" @onclick=Breed>Breed</button>
-                                </div>
-                            </li>
-                            <li class="list-group-item align-items-center form-group">
-                                <h5>Parent Fitness</h5>
-                                <div class="btn-group" role="group" aria-label="Basic radio toggle button group">
-                                    <input type="radio" class="btn-check" name="btnradio" id="btnradio1" autocomplete="off" @onclick="()=>parentFitnessState = FitnessState.LeftMoreFit">
-                                    <label class="btn btn-outline-primary" for="btnradio1">@((MarkupString)left.Name)</label>
-
-                                    <input type="radio" class="btn-check" name="btnradio" id="btnradio2" autocomplete="off" @onclick="()=>parentFitnessState = FitnessState.EqualFitness" checked>
-                                    <label class="btn btn-outline-primary" for="btnradio2">Equal Fitness</label>
-
-                                    <input type="radio" class="btn-check" name="btnradio" id="btnradio3" autocomplete="off" @onclick="()=>parentFitnessState = FitnessState.RightMoreFit">
-                                    <label class="btn btn-outline-primary" for="btnradio3">@((MarkupString)right.Name)</label>
-                                </div>
-                            </li>
-                            @{
-                                var breakdown = ((DefaultNetworkComparer)controller.NetworkComparer).GenerateVerboseCompatibility(left, right);
-                            }
-                            <li class="list-group-item align-items-center form-group">
-                                <h5>
-                                    Current Compatibility
-                                    <span class="badge bg-dark">𝛿 &asymp; @Math.Round(breakdown.Compatibility, 2) @( breakdown.Compatibility<=controller.CompatibilityThreashold ? (MarkupString)$"&#10004;" : (MarkupString)$"&#10006;")</span>
-                                </h5>
-                                <table class="table table-striped">
-                                    <thead>
-                                        <tr>
-                                            <td>
-                                                Excess
-                                            </td>
-                                            <td>
-                                                Disjoint
-                                            </td>
-                                            <td style="text-decoration: overline;" title="Average weight">
-                                                Weight
-                                            </td>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>
-                                                <span class="badge bg-dark">𝚬 &asymp; @breakdown.Excess</span>
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-dark">𝓓 &asymp; @breakdown.Disjoint</span>
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-dark"><span style="text-decoration:overline; font-weight: bold;">W</span> &asymp; @Math.Round(breakdown.AverageWeightDifference, 3)</span>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </li>
-                            <li class="list-group-item align-items-center form-group">
-                                <h5>
-                                    Compatibility Threashold
-                                    <span class="badge bg-dark">𝛿<i><sub>t</sub></i> &asymp; @controller.CompatibilityThreashold</span>
-                                </h5>
-                                <input type="range" class="form-range" @bind-value=@controller.CompatibilityThreashold min=@(0d) max=@(4d) step=@(0.001d) id="customRange3">
-                            </li>
-                            <li class="list-group-item align-items-center form-group">
-                                <h5>
-                                    Excess Modifier
-                                    <span class="badge bg-dark">C<i><sub>1</sub></i> &asymp; @controller.NetworkComparer.ExcessCoefficient</span>
-                                </h5>
-                                <input type="range" class="form-range" @bind-value=@controller.NetworkComparer.ExcessCoefficient min=@(0d) max=@(4d) step=@(0.001d) id="customRange3">
-                            </li>
-                            <li class="list-group-item align-items-center form-group">
-                                <h5>
-                                    Disjoint Modifier
-                                    <span class="badge bg-dark">C<i><sub>2</sub></i> &asymp; @controller.NetworkComparer.DisjointCoefficient</span>
-                                </h5>
-                                <input type="range" class="form-range" @bind-value=@controller.NetworkComparer.DisjointCoefficient min=@(0d) max=@(4d) step=@(0.001d) id="customRange3">
-                            </li>
-                            <li class="list-group-item align-items-center form-group">
-                                <h5>
-                                    Weight Diff. Modifier
-                                    <span class="badge bg-dark">C<i><sub>3</sub></i> &asymp; @controller.NetworkComparer.WeightCoefficient</span>
-                                </h5>
-                                <input type="range" class="form-range" @bind-value=@controller.NetworkComparer.WeightCoefficient min=@(0d) max=@(4d) step=@(0.001d) id="customRange3">
-                            </li>
-                        </ul>
-                        <ul class="list-group my-4" style="width: 97%; text-align: center;">
-                            <li class="list-group-item list-group-item-secondary">
-                                <h4>Mutation Settings</h4>
-                            </li>
-                            <li class="list-group-item align-items-center form-group">
-                                <h5>
-                                    Mutations Per Click
-                                    <span class="badge bg-dark">@MutationsPerClick</span>
-                                </h5>
-                                <input type="range" class="form-range" @bind-value=@MutationsPerClick min=@MinMutationsPC max=@MaxMutationsPC step=@MutationsPCStep id="customRange3">
-
-                            </li>
-                            <li class="list-group-item  align-items-center form-group">
-                                <h5>
-                                    Weight Modifier
-                                    <span class="badge bg-dark">@Math.Round(MutationModifier * 100d, 2)%</span>
-                                </h5>
-                                <input type="range" class="form-range" @bind-value=@MutationModifier min=@MinMutationModifier max=@MaxMutationModifier step="0.001" id="customRange3">
-                            </li>
-                        </ul>
-                        <ul class="list-group my-4" style="width: 97%; text-align: center;">
-                            <li class="list-group-item list-group-item-secondary">
-                                <h4>Weight Chances</h4>
-                            </li>
-                            <li class="list-group-item align-items-center form-group">
-                                <div class="progress my-2">
-                                    <div class="progress-bar" role="progressbar" style=@($"width: {ReassignChanceProgressSize}%;") aria-valuemin="0" aria-valuemax="100">@(ReassignChanceProgressSize)%</div>
-                                    <div class="progress-bar bg-success" role="progressbar" style=@($"width: {PerturbChanceProgressSize}%;") aria-valuemin="0" aria-valuemax="100">@(PerturbChanceProgressSize)%</div>
-                                    <div class="progress-bar bg-danger" role="progressbar" style=@($"width: {RemainingWeightProgressSize}%;") aria-valuemin="0" aria-valuemax="100">@(RemainingWeightProgressSize)%</div>
-                                </div>
-                            </li>
-                            <li class="list-group-item align-items-center form-group">
-                                <h5>
-                                    Reassign Weight &#127922;
-                                    <span class="badge bg-primary">@Math.Round(ReassignChance * 100d, 2)%</span>
-                                </h5>
-                                <input type="range" class="form-range" @bind-value=@ReassignChance min=@MinReassignChance max=@MaxReassignChance step="0.001" id="customRange3">
-                            </li>
-                            <li class="list-group-item  align-items-center form-group">
-                                <h5>
-                                    Modify Weight &#127922;
-                                    <span class="badge bg-success">@Math.Round(PerturbChance * 100d, 2)%</span>
-                                </h5>
-                                <input type="range" class="form-range" @bind-value=@PerturbChance min=@MinPerturbChance max=@MaxPerturbChance step="0.001" id="customRange3">
-                            </li>
-                        </ul>
-                        <ul class="list-group my-4" style="width: 97%; text-align: center;">
-                            <li class="list-group-item list-group-item-secondary">
-                                <h4>Mutation Chances</h4>
-                            </li>
-                            <li class="list-group-item align-items-center form-group">
-                                <div class="progress my-2">
-                                    <div class="progress-bar" role="progressbar" style=@($"width: {AddNodeProgressSize}%;") aria-valuemin="0" aria-valuemax="100">@(AddNodeProgressSize)%</div>
-                                    <div class="progress-bar bg-success" role="progressbar" style=@($"width: {AddConnectionProgressSize}%;") aria-valuemin="0" aria-valuemax="100">@(AddConnectionProgressSize)%</div>
-                                    <div class="progress-bar bg-danger" role="progressbar" style=@($"width: {RemainingProgressSize}%;") aria-valuemin="0" aria-valuemax="100">@(RemainingProgressSize)%</div>
-                                </div>
-                            </li>
-                            <li class="list-group-item align-items-center form-group">
-                                <h5>
-                                    Add Node &#127922;
-                                    <span class="badge bg-primary">@Math.Round(AddNodeChance * 100d, 2)%</span>
-                                </h5>
-                                <input type="range" class="form-range" @bind-value=@AddNodeChance min=@MinAddNodeChance max=@MaxAddNodeChance step="0.001" id="customRange3">
-                            </li>
-                            <li class="list-group-item  align-items-center form-group">
-                                <h5>
-                                    Add Connection &#127922;
-                                    <span class="badge bg-success">@Math.Round(AddConnectionChance * 100d, 2)%</span>
-                                </h5>
-                                <input type="range" class="form-range" @bind-value=@AddConnectionChance min=@MinAddConnectionChance max=@MaxAddConnectionChance step="0.001" id="customRange3">
-                            </li>
-                        </ul>
-                        <ul class="list-group my-4" style="width: 97%; text-align: center;">
-                            <li class="list-group-item list-group-item-secondary">
-                                <h4>Network Setup</h4>
-                            </li>
-                            <li class="list-group-item align-items-center form-group">
-                                <h5>
-                                    Max Networks
-                                    <span class="badge bg-dark">@startingMaxNetworks</span>
-                                </h5>
-                                <input type="range" class="form-range" @bind-value=@startingMaxNetworks min=@(2) max=@maxNetworks step=@(1) id="customRange3">
-                            </li>
-                            <li class="list-group-item align-items-center form-group">
-                                <h5>
-                                    Input Nodes
-                                    <span class="badge bg-dark">@startingInputNodes</span>
-                                </h5>
-                                <input type="range" class="form-range" @bind-value=@startingInputNodes min=@minNodes max=@maxNodes step=@(1) id="customRange3">
-                            </li>
-                            <li class="list-group-item  align-items-center form-group">
-                                <h5>
-                                    Output Nodes
-                                    <span class="badge bg-dark">@startingOutputNodes</span>
-                                </h5>
-                                <input type="range" class="form-range" @bind-value=@startingOutputNodes min=@minNodes max=@maxNodes step=@(1) id="customRange3">
-                            </li>
-                        </ul>
-                    </div>
-                    break;
-                case 2:
-                    <div style="text-align: left;">
-                        <button type="button" class="btn btn-outline-primary" @onclick=ClearConsole title="Clear Console">
+                        Refresh
+                    </button>
+                    <button type="button" class="btn btn-outline-primary" @onclick=ResetAll title="Reset All Networks">
+                        <div>
+                            <span class="oi oi-reload"></span>
+                            <span class="oi oi-fork"></span>
+                        </div>
+                        Reset Networks
+                    </button>
+                    <button type="button" class="btn btn-outline-primary" @onclick=ClearConsole title="Clear Console">
+                        <div>
                             <span class="oi oi-reload"></span>
                             <span class="oi oi-terminal"></span>
-                            Clear
-                        </button>
-                    </div>
-                    <h2 class="text-center">
-                        Console
-                    </h2>
-                    <ul class="list-group list-group-flush w-100" style="text-align: left;">
-                        @foreach (var item in console)
+                        </div>
+                        Clear Console
+                    </button>
+                </div>
+                <ul class="list-group my-4" style="width: 97%; text-align: center;">
+                    <li class="list-group-item list-group-item-secondary">
+                        <h4>Species Controller</h4>
+                    </li>
+                    <li class="list-group-item align-items-center form-group">
+                        <div class="btn-group w-100 my-2" role="group" aria-label="Basic example">
+                            <button type="button" class="btn btn-outline-primary" @onclick=RedrawCanvas tite="Refresh Screen">
+                                Reset
+                            </button>
+                            <button type="button" class="btn btn-outline-primary" @onclick=controller.SpeciateGeneration title="Speciate">
+                                Speciate
+                            </button>
+                            <button type="button" class="btn btn-outline-primary">
+                                Evaluate
+                            </button>
+                        </div>
+                    </li>
+                </ul>
+                <ul class="list-group my-4" style="width: 97%; text-align: center;">
+                    <li class="list-group-item list-group-item-secondary">
+                        <h4>Breeding</h4>
+                    </li>
+                    <li class="list-group-item align-items-center form-group">
+                        <div class="btn-group w-100 my-2" role="group" aria-label="Basic example">
+                            <button type="button" class="btn btn-outline-primary" @onclick=Breed>Breed</button>
+                        </div>
+                    </li>
+                    <li class="list-group-item align-items-center form-group">
+                        <h5>Parent Fitness</h5>
+                        <div class="btn-group" role="group" aria-label="Basic radio toggle button group">
+                            <input type="radio" class="btn-check" name="btnradio" id="btnradio1" autocomplete="off" @onclick="()=>parentFitnessState = FitnessState.LeftMoreFit">
+                            <label class="btn btn-outline-primary" for="btnradio1">@((MarkupString)left.Name)</label>
+
+                            <input type="radio" class="btn-check" name="btnradio" id="btnradio2" autocomplete="off" @onclick="()=>parentFitnessState = FitnessState.EqualFitness" checked>
+                            <label class="btn btn-outline-primary" for="btnradio2">Equal Fitness</label>
+
+                            <input type="radio" class="btn-check" name="btnradio" id="btnradio3" autocomplete="off" @onclick="()=>parentFitnessState = FitnessState.RightMoreFit">
+                            <label class="btn btn-outline-primary" for="btnradio3">@((MarkupString)right.Name)</label>
+                        </div>
+                    </li>
+                    @{
+                                var breakdown = ((DefaultNetworkComparer)controller.NetworkComparer).GenerateVerboseCompatibility(left, right);
+                    }
+                    <li class="list-group-item align-items-center form-group">
+                        <h5>
+                            Current Compatibility
+                            <span class="badge bg-dark">𝛿 &asymp; @Math.Round(breakdown.Compatibility, 2) @( breakdown.Compatibility<=controller.CompatibilityThreashold ? (MarkupString)$"&#10004;" : (MarkupString)$"&#10006;")</span>
+                        </h5>
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <td>
+                                        Excess
+                                    </td>
+                                    <td>
+                                        Disjoint
+                                    </td>
+                                    <td style="text-decoration: overline;" title="Average weight">
+                                        Weight
+                                    </td>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-dark">𝚬 &asymp; @breakdown.Excess</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-dark">𝓓 &asymp; @breakdown.Disjoint</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-dark"><span style="text-decoration:overline; font-weight: bold;">W</span> &asymp; @Math.Round(breakdown.AverageWeightDifference, 3)</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </li>
+                    <li class="list-group-item align-items-center form-group">
+                        <h5>
+                            Compatibility Threashold
+                            <span class="badge bg-dark">𝛿<i><sub>t</sub></i> &asymp; @controller.CompatibilityThreashold</span>
+                        </h5>
+                        <input type="range" class="form-range" @bind-value=@controller.CompatibilityThreashold min=@(0d) max=@(4d) step=@(0.001d) id="customRange3">
+                    </li>
+                    <li class="list-group-item align-items-center form-group">
+                        <h5>
+                            Excess Modifier
+                            <span class="badge bg-dark">C<i><sub>1</sub></i> &asymp; @controller.NetworkComparer.ExcessCoefficient</span>
+                        </h5>
+                        <input type="range" class="form-range" @bind-value=@controller.NetworkComparer.ExcessCoefficient min=@(0d) max=@(4d) step=@(0.001d) id="customRange3">
+                    </li>
+                    <li class="list-group-item align-items-center form-group">
+                        <h5>
+                            Disjoint Modifier
+                            <span class="badge bg-dark">C<i><sub>2</sub></i> &asymp; @controller.NetworkComparer.DisjointCoefficient</span>
+                        </h5>
+                        <input type="range" class="form-range" @bind-value=@controller.NetworkComparer.DisjointCoefficient min=@(0d) max=@(4d) step=@(0.001d) id="customRange3">
+                    </li>
+                    <li class="list-group-item align-items-center form-group">
+                        <h5>
+                            Weight Diff. Modifier
+                            <span class="badge bg-dark">C<i><sub>3</sub></i> &asymp; @controller.NetworkComparer.WeightCoefficient</span>
+                        </h5>
+                        <input type="range" class="form-range" @bind-value=@controller.NetworkComparer.WeightCoefficient min=@(0d) max=@(4d) step=@(0.001d) id="customRange3">
+                    </li>
+                </ul>
+                <ul class="list-group my-4" style="width: 97%; text-align: center;">
+                    <li class="list-group-item list-group-item-secondary">
+                        <h4>Mutation Settings</h4>
+                    </li>
+                    <li class="list-group-item align-items-center form-group">
+                        <h5>
+                            Mutations Per Click
+                            <span class="badge bg-dark">@MutationsPerClick</span>
+                        </h5>
+                        <input type="range" class="form-range" @bind-value=@MutationsPerClick min=@MinMutationsPC max=@MaxMutationsPC step=@MutationsPCStep id="customRange3">
+
+                    </li>
+                    <li class="list-group-item  align-items-center form-group">
+                        <h5>
+                            Weight Modifier
+                            <span class="badge bg-dark">@Math.Round(MutationModifier * 100d, 2)%</span>
+                        </h5>
+                        <input type="range" class="form-range" @bind-value=@MutationModifier min=@MinMutationModifier max=@MaxMutationModifier step="0.001" id="customRange3">
+                    </li>
+                </ul>
+                <ul class="list-group my-4" style="width: 97%; text-align: center;">
+                    <li class="list-group-item list-group-item-secondary">
+                        <h4>Weight Chances</h4>
+                    </li>
+                    <li class="list-group-item align-items-center form-group">
+                        <div class="progress my-2">
+                            <div class="progress-bar" role="progressbar" style=@($"width: {ReassignChanceProgressSize}%;") aria-valuemin="0" aria-valuemax="100">@(ReassignChanceProgressSize)%</div>
+                            <div class="progress-bar bg-success" role="progressbar" style=@($"width: {PerturbChanceProgressSize}%;") aria-valuemin="0" aria-valuemax="100">@(PerturbChanceProgressSize)%</div>
+                            <div class="progress-bar bg-danger" role="progressbar" style=@($"width: {RemainingWeightProgressSize}%;") aria-valuemin="0" aria-valuemax="100">@(RemainingWeightProgressSize)%</div>
+                        </div>
+                    </li>
+                    <li class="list-group-item align-items-center form-group">
+                        <h5>
+                            Reassign Weight &#127922;
+                            <span class="badge bg-primary">@Math.Round(ReassignChance * 100d, 2)%</span>
+                        </h5>
+                        <input type="range" class="form-range" @bind-value=@ReassignChance min=@MinReassignChance max=@MaxReassignChance step="0.001" id="customRange3">
+                    </li>
+                    <li class="list-group-item  align-items-center form-group">
+                        <h5>
+                            Modify Weight &#127922;
+                            <span class="badge bg-success">@Math.Round(PerturbChance * 100d, 2)%</span>
+                        </h5>
+                        <input type="range" class="form-range" @bind-value=@PerturbChance min=@MinPerturbChance max=@MaxPerturbChance step="0.001" id="customRange3">
+                    </li>
+                </ul>
+                <ul class="list-group my-4" style="width: 97%; text-align: center;">
+                    <li class="list-group-item list-group-item-secondary">
+                        <h4>Mutation Chances</h4>
+                    </li>
+                    <li class="list-group-item align-items-center form-group">
+                        <div class="progress my-2">
+                            <div class="progress-bar" role="progressbar" style=@($"width: {AddNodeProgressSize}%;") aria-valuemin="0" aria-valuemax="100">@(AddNodeProgressSize)%</div>
+                            <div class="progress-bar bg-success" role="progressbar" style=@($"width: {AddConnectionProgressSize}%;") aria-valuemin="0" aria-valuemax="100">@(AddConnectionProgressSize)%</div>
+                            <div class="progress-bar bg-danger" role="progressbar" style=@($"width: {RemainingProgressSize}%;") aria-valuemin="0" aria-valuemax="100">@(RemainingProgressSize)%</div>
+                        </div>
+                    </li>
+                    <li class="list-group-item align-items-center form-group">
+                        <h5>
+                            Add Node &#127922;
+                            <span class="badge bg-primary">@Math.Round(AddNodeChance * 100d, 2)%</span>
+                        </h5>
+                        <input type="range" class="form-range" @bind-value=@AddNodeChance min=@MinAddNodeChance max=@MaxAddNodeChance step="0.001" id="customRange3">
+                    </li>
+                    <li class="list-group-item  align-items-center form-group">
+                        <h5>
+                            Add Connection &#127922;
+                            <span class="badge bg-success">@Math.Round(AddConnectionChance * 100d, 2)%</span>
+                        </h5>
+                        <input type="range" class="form-range" @bind-value=@AddConnectionChance min=@MinAddConnectionChance max=@MaxAddConnectionChance step="0.001" id="customRange3">
+                    </li>
+                </ul>
+                <ul class="list-group my-4" style="width: 97%; text-align: center;">
+                    <li class="list-group-item list-group-item-secondary">
+                        <h4>Network Setup</h4>
+                    </li>
+                    <li class="list-group-item align-items-center form-group">
+                        <h5>
+                            Max Networks
+                            <span class="badge bg-dark">@startingMaxNetworks</span>
+                        </h5>
+                        <input type="range" class="form-range" @bind-value=@startingMaxNetworks min=@(2) max=@maxNetworks step=@(1) id="customRange3">
+                    </li>
+                    <li class="list-group-item align-items-center form-group">
+                        <h5>
+                            Input Nodes
+                            <span class="badge bg-dark">@startingInputNodes</span>
+                        </h5>
+                        <input type="range" class="form-range" @bind-value=@startingInputNodes min=@minNodes max=@maxNodes step=@(1) id="customRange3">
+                    </li>
+                    <li class="list-group-item  align-items-center form-group">
+                        <h5>
+                            Output Nodes
+                            <span class="badge bg-dark">@startingOutputNodes</span>
+                        </h5>
+                        <input type="range" class="form-range" @bind-value=@startingOutputNodes min=@minNodes max=@maxNodes step=@(1) id="customRange3">
+                    </li>
+                </ul>
+            </div>
+                    break;
+                case 2:
+            <div style="text-align: left;">
+                <button type="button" class="btn btn-outline-primary" @onclick=ClearConsole title="Clear Console">
+                    <span class="oi oi-reload"></span>
+                    <span class="oi oi-terminal"></span>
+                    Clear
+                </button>
+            </div>
+            <h2 class="text-center">
+                Console
+            </h2>
+            <ul class="list-group list-group-flush w-100" style="text-align: left;">
+                @foreach (var item in console)
                         {
-                            @((MarkupString)item)
+                @((MarkupString)item)
                         }
-                    </ul>
+            </ul>
                     break;
                 case 3:
                     foreach (var item in controller.Generation)
                     {
-                        <NetworkCard Network=@item></NetworkCard>
+            <NetworkCard Network=@item></NetworkCard>
                     }
                     break;
                 case 4:
-                    <li class="list-group-item align-items-center form-group">
-                        <div class="btn-group w-100 my-2" role="group" aria-label="Basic example">
-                            <button type="button" class="btn btn-outline-primary" @onclick=controller.SpeciateGeneration title="Speciate">
-                                Speciate
-                            </button>
-                        </div>
-                    </li>
+            <li class="list-group-item align-items-center form-group">
+                <div class="btn-group w-100 my-2" role="group" aria-label="Basic example">
+                    <button type="button" class="btn btn-outline-primary" @onclick=controller.SpeciateGeneration title="Speciate">
+                        Speciate
+                    </button>
+                </div>
+            </li>
                     int index = 0;
                     foreach (var item in controller.Species)
                     {
-                        <div class="card d-inline-flex mx-1 my-1">
-                            <div class="card-header" style="text-align: center;">
-                                <h3>
-                                    @index
-                                    <span class="badge bg-primary">@item.Length</span>
-                                </h3>
+            <div class="card d-inline-flex mx-1 my-1">
+                <div class="card-header" style="text-align: center;">
+                    <h3>
+                        @index
+                        <span class="badge bg-primary">@item.Length</span>
+                    </h3>
 
-                            </div>
-                            <div class="card-body" style="text-align: center;">
-                                <div class="card-text my-2">
-                                    Representative
-                                    <div>
-                                        @{
+                </div>
+                <div class="card-body" style="text-align: center;">
+                    <div class="card-text my-2">
+                        Representative
+                        <div>
+                            @{
                                             int rep = controller.SpeciesRepresentatives[index];
-                                        }
-                                        <span class="badge bg-dark">@((MarkupString)$"{rep} {controller.Generation[rep].Name}")</span>
-                                    </div>
-                                </div>
-                                <ListGroup Stripe="true" Items=@(item.Select(x=>(object)($"{x} {controller.Generation[x].Name} <div><span class=\"badge bg-warning\">{controller.Generation[x].Innovations.Length}</span> <span class=\"badge bg-primary\">{controller.Generation[x].Count}</span> <span class=\"badge bg-dark\">{controller.Generation[x].NodeLayers.Length}</span></div>")).ToArray())></ListGroup>
-                            </div>
+                            }
+                            <span class="badge bg-dark">@((MarkupString)$"{rep} {controller.Generation[rep].Name}")</span>
                         </div>
+                    </div>
+                    <ListGroup Stripe="true" Items=@(item.Select(x=>(object)($"{x} {controller.Generation[x].Name} <div><span class=\"badge bg-warning\">{controller.Generation[x].Innovations.Length}</span> <span class=\"badge bg-primary\">{controller.Generation[x].Count}</span> <span class=\"badge bg-dark\">{controller.Generation[x].NodeLayers.Length}</span></div>")).ToArray())></ListGroup>
+                </div>
+            </div>
                         index++;
                     }
                     break;
                 case 5:
-                    <li class="list-group-item align-items-center form-group" style="max-width: 40%;">
-                        <div class="btn-group w-100 my-2" role="group" aria-label="Basic example">
-                            <span class="input-group-text" id="addon-wrapping">Data</span>
-                            <button class="btn btn-primary btn-lg dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                @(string.Join(", ", EvalData[selectedData]))
-                            </button>
-                            <ul class="dropdown-menu" style="max-height: 300px; overflow-y: auto; overflow-x: hidden;">
-                                @for (int i = 0; i < EvalData.Length; i++)
+            <li class="list-group-item align-items-center form-group" style="max-width: 40%;">
+                <div class="btn-group w-100 my-2" role="group" aria-label="Basic example">
+                    <span class="input-group-text" id="addon-wrapping">Data</span>
+                    <button class="btn btn-primary btn-lg dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        @(string.Join(", ", EvalData[selectedData]))
+                    </button>
+                    <ul class="dropdown-menu" style="max-height: 300px; overflow-y: auto; overflow-x: hidden;">
+                        @for (int i = 0; i < EvalData.Length; i++)
                                 {
                                     int x = i;
-                                    <li>
-                                        <button class=@networkButtonColors[x % networkButtonColors.Length] type="button" @onclick="()=>selectedData = x">@(string.Join(", ", EvalData[x]))</button>
-                                    </li>
+                        <li>
+                            <button class=@networkButtonColors[x % networkButtonColors.Length] type="button" @onclick="()=>selectedData = x">@(string.Join(", ", EvalData[x]))</button>
+                        </li>
                                 }
-                            </ul>
-                            <button type="button" class="btn btn-outline-primary" @onclick=EvaluateGeneration title="Speciate">
-                                Evaluate Once
-                            </button>
-                            @if (Evaluating)
+                    </ul>
+                    <button type="button" class="btn btn-outline-primary" @onclick=EvaluateGeneration title="Speciate">
+                        Evaluate Once
+                    </button>
+                    @if (Evaluating)
                             {
-                                <div class="input-group-text" id="addon-wrapping">
-                                    <div class="spinner-border text-primary" role="status">
-                                        <span class="visually-hidden">Loading...</span>
-                                    </div>
-                                </div>
-                            }
-                            <button type="button" class="btn btn-outline-primary" @onclick=ReproduceGeneration title="Speciate">
-                                Reproduce
-                            </button>
-                            @if (Reproducing)
-                            {
-                                <div class="input-group-text" id="addon-wrapping">
-                                    <div class="spinner-border text-primary" role="status">
-                                        <span class="visually-hidden">Loading...</span>
-                                    </div>
-                                </div>
-                            }
-                            <button type="button" class="btn btn-outline-primary" @onclick=ReproduceGenerationMultiple title="Speciate">
-                                Reproduce And Eval All Data
-                            </button>
-                            @if (Reproducing)
-                            {
-                                <div class="input-group-text" id="addon-wrapping">
-                                    <div class="spinner-border text-primary" role="status">
-                                        <span class="visually-hidden">Loading...</span>
-                                    </div>
-                                </div>
-                            }
+                    <div class="input-group-text" id="addon-wrapping">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
                         </div>
-                    </li>
-                    @if (Fitnesses != default)
+                    </div>
+                            }
+                    <button type="button" class="btn btn-outline-primary" @onclick=ReproduceGeneration title="Speciate">
+                        Reproduce
+                    </button>
+                    @if (Reproducing)
+                            {
+                    <div class="input-group-text" id="addon-wrapping">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                            }
+                    <button type="button" class="btn btn-outline-primary" @onclick=ReproduceGenerationMultiple title="Speciate">
+                        Reproduce And Eval All Data
+                    </button>
+                    @if (Reproducing)
+                            {
+                    <div class="input-group-text" id="addon-wrapping">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                            }
+                </div>
+            </li>
+            @if (Fitnesses != default)
                     {
                         index = 0;
-                        foreach (var item in Fitnesses.Fitnesses)
+                        foreach (var item in controller.Species)
                         {
-                            <div class="card d-inline-flex mx-1 my-1">
-                                <div class="card-header" style="text-align: center;">
-                                    <h3>
-                                        Species
-                                    </h3>
-                                    @item.Species
-                                    <span class="badge bg-primary">@(Math.Round(item.Fitness,2))</span>
-                                </div>
-                                <div class="card-body" style="text-align: center;">
-                                    <ListGroup Stripe="true" Items=@(item.Fitnesses.Select(x=>(object)($"{Math.Round(x,2)}")).ToArray())></ListGroup>
-                                </div>
-                            </div>
+                            var organisms = Fitnesses.Where(x => item.Where(y => y == x.Id) != default).Select(x => (object)x.Fitness);
+            <div class="card d-inline-flex mx-1 my-1">
+                <div class="card-header" style="text-align: center;">
+                    <h3>
+                        Species
+                    </h3>
+                    @index
+                </div>
+                <div class="card-body" style="text-align: center;">
+                    <ListGroup Stripe="true" Items=@(organisms.ToArray())></ListGroup>
+                </div>
+            </div>
                             index++;
                         }
                     }
@@ -439,7 +441,7 @@
 
     SpeciesController<NeatNueralNetwork> controller = new(3, 2);
 
-    (ISpeciesFitness<double>[] Fitnesses, double GenerationFitness) Fitnesses;
+    OrganismStruct[] Fitnesses;
 
     NeatNueralNetwork childNetwork = null;
 
@@ -820,6 +822,8 @@
 
         Fitnesses = await controller.EvaluateGeneration(data, TokenSource.Token);
 
+        Fitnesses = await controller.AdjustFitnesses(Fitnesses, TokenSource.Token);
+
         Log($"Finished Evaluation with data {string.Join(", ", data)}", MsgType.success);
 
         Evaluating = false;
@@ -827,6 +831,7 @@
 
     private async Task ReproduceGenerationMultiple()
     {
+        throw new Exception();
         if (Reproducing)
         {
             TokenSource.Cancel();
@@ -841,9 +846,11 @@
 
         await EvaluateGeneration();
 
-        (ISpeciesFitness<double>[] Fitnesses, double GenerationFitness) AverageFitnesses = Fitnesses;
+        OrganismStruct[] AverageFitnesses = Fitnesses;
 
-        for (int i = 0; i < 10; i++)
+        int iterations = 10;
+
+        for (int i = 0; i < iterations; i++)
         {
             selectedData = await NeuroSharp.Helpers.Random.NextAsync(0, EvalData.Length);
 
@@ -857,18 +864,20 @@
 
             Fitnesses = await controller.EvaluateGeneration(data, TokenSource.Token);
 
-            for (int x = 0; x < AverageFitnesses.Fitnesses.Length; x++)
+            for (int x = 0; x < Fitnesses.Length; x++)
             {
-                AverageFitnesses.Fitnesses[x].Fitness = (AverageFitnesses.Fitnesses[x].Fitness + Fitnesses.Fitnesses[x].Fitness) / 2;
-                for (int y = 0; y < AverageFitnesses.Fitnesses[x].Fitnesses.Length; y++)
-                {
-                    AverageFitnesses.Fitnesses[x].Fitnesses[y] = (AverageFitnesses.Fitnesses[x].Fitnesses[y] + Fitnesses.Fitnesses[x].Fitnesses[y]) / 2;
-                }
+                AverageFitnesses[i].Fitness += Fitnesses[i].Fitness;
             }
-            AverageFitnesses.GenerationFitness = (Fitnesses.GenerationFitness + AverageFitnesses.GenerationFitness) / 2;
+
+
         }
 
-        await controller.Reproduce(AverageFitnesses.Fitnesses, AverageFitnesses.GenerationFitness);
+        for (int i = 0; i < AverageFitnesses.Length; i++)
+        {
+            AverageFitnesses[i].Fitness /= iterations;
+        }
+
+        await controller.ReproduceAndMutate(AverageFitnesses, TokenSource.Token);
 
         Reproducing = false;
     }
@@ -891,7 +900,7 @@
 
         Log($"Started reproduction", MsgType.none);
 
-        await controller.Reproduce(Fitnesses.Fitnesses, Fitnesses.GenerationFitness);
+        await controller.ReproduceAndMutate(Fitnesses, TokenSource.Token);
 
         Log($"Finished reproduction", MsgType.success);
 

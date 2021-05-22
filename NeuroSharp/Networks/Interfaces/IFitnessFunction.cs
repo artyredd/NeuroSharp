@@ -41,5 +41,7 @@ namespace NeuroSharp
         /// <param name="SpeciesFitnesses"></param>
         /// <returns></returns>
         Span<T> AdjustSpeciesFitness(ref Span<T> SpeciesFitnesses, out T TotalFitness);
+
+        T AdjustOrganismFitness(ref T Fitness, ref int SpeciesSize);
     }
 }

@@ -29,7 +29,7 @@ namespace NeuroSharp.NEAT
 
         public override string ToString()
         {
-            return $"({Id}) {Math.Round(Fitness,2)}..";
+            return $"({Id}) {Math.Round(Fitness, 2)}..";
         }
 
         public override int GetHashCode()

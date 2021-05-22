@@ -11,7 +11,7 @@ namespace NeuroSharp.Tests.Networks.Reproduction
 {
     public class UnfitSpeciesSelection
     {
-        private readonly IReproductionHandler ReproductionHandler = new DefaultReproductionHandler();
+        private readonly IReproductionHandler<OrganismStruct> ReproductionHandler = new DefaultReproductionHandler<OrganismStruct>();
         [Fact]
         public void SelectionFunctionWorks()
         {

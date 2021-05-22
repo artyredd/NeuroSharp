@@ -33,7 +33,7 @@ namespace NeuroSharp.NEAT
 
         public INeatNetworkComparer NetworkComparer { get; set; } = new DefaultNetworkComparer();
 
-        public IReproductionHandler ReproductionHandler { get; set; } = new DefaultReproductionHandler();
+        public IReproductionHandler<OrganismStruct> ReproductionHandler { get; set; } = new DefaultReproductionHandler<OrganismStruct>();
 
         public IFitnessFunction<double[], double> FitnessFunction { get; set; } = new DefaultFitnessFunction();
 
@@ -56,6 +56,8 @@ namespace NeuroSharp.NEAT
         }
 
         internal int[][] _Species = Array.Empty<int[]>();
+
+        public IDictionary<int, int> SpeciesDictionary { get; set; } = new Dictionary<int, int>();
 
         public SpeciesController(int InputNodes, int OutputNodes)
         {
@@ -104,16 +106,13 @@ namespace NeuroSharp.NEAT
                 Generation[i] = InstantiateNewNetwork(InputNodes, OutputNodes);
             }
 
-            await Helpers.Random.Sleep();
+            await SpeciateGeneration();
 
             return GenerationCreationResult.success;
         }
 
         public async Task SpeciateGeneration()
         {
-            // this is to remove the warning without pragma becuase i will forget otherwise
-            await Helpers.Random.Sleep();
-
             // clear the old values
             _SpeciesRepresentatives = Array.Empty<int>();
             _Species = Array.Empty<int[]>();
@@ -122,7 +121,15 @@ namespace NeuroSharp.NEAT
             for (int i = 1; i < Generation.Length; i++)
             {
                 SpeciateOrganism(ref i);
+
+                await Task.Yield();
             }
+
+            // create the species dictionary
+            SpeciesDictionary = CreateSpeciesDictionary(ref _Species);
+
+            // this is to remove the warning without pragma becuase i will forget otherwise
+            await Task.Yield();
         }
 
         /// <summary>
@@ -131,283 +138,222 @@ namespace NeuroSharp.NEAT
         /// <param name="DataToEvaluate"></param>
         /// <param name="token"></param>
         /// <returns></returns>
-        public async Task<(ISpeciesFitness<double>[] Fitnesses, double GenerationFitness)> EvaluateGeneration(double[] DataToEvaluate, CancellationToken token)
+        public async Task<OrganismStruct[]> EvaluateGeneration(double[] DataToEvaluate, CancellationToken token)
         {
-            int numberOfSpecies = Species.Length;
+            int numberOfOrganisms = Generation.Length;
 
-            ISpeciesFitness<double>[] results = new ISpeciesFitness<double>[numberOfSpecies];
+            double[][] evaluationResults = new double[numberOfOrganisms][];
 
-            double TotalFitness = 0;
+            SemaphoreSlim ThreadLimiter = new(Environment.ProcessorCount, Environment.ProcessorCount);
 
-            ISpeciesFitness<double> CreateResult(int speciesId, double[][] RawResults)
+            SemaphoreSlim ResultLock = new(1, 1);
+
+            void Worker(int index, INeatNetwork network, CancellationToken token)
             {
-                var (AdjustedFitnesses, TotalAdjustedFitness) = GetSpeciesFitness(RawResults);
-
-                TotalFitness += TotalAdjustedFitness;
-
-                return new SpeciesEvaluationResult<double>
+                ThreadLimiter.Wait(token);
+                try
                 {
-                    Species = speciesId,
-                    Fitness = TotalAdjustedFitness,
-                    Fitnesses = AdjustedFitnesses
+                    double[] results = network.Evaluate(DataToEvaluate);
+
+                    ResultLock.Wait(token);
+                    try
+                    {
+                        evaluationResults[index] = results;
+                    }
+                    finally
+                    {
+                        ResultLock.Release();
+                    }
+                }
+                finally
+                {
+                    // matching lock is in loop starting tasks
+                    ThreadLimiter.Release();
+                }
+            }
+
+            // start up workers that will evaluate every network
+            Task[] tasks = new Task[numberOfOrganisms];
+
+            for (int i = 0; i < numberOfOrganisms; i++)
+            {
+                token.ThrowIfCancellationRequested();
+
+                int index = i;
+
+                //Worker(index, Generation[i], token);
+
+                tasks[i] = Task.Run(() => Worker(index, Generation[index], token), token);
+            }
+
+            // wait for all the workers to finish their work
+            await Task.WhenAll(tasks);
+
+            // now that we have the results all the networks calculated we should run the fitness function on them
+            return FitEvaluationData(ref evaluationResults);
+        }
+
+        public async Task<OrganismStruct[]> AdjustFitnesses(OrganismStruct[] EvaluatedOrganisms, CancellationToken token)
+        {
+            // find the species of each organism and adjust it's fitness compared to the total population of that species
+
+            await Task.Run(() => AdjustOrganisms(ref EvaluatedOrganisms), token);
+
+            return EvaluatedOrganisms;
+        }
+
+        public async Task ReproduceAndMutate(OrganismStruct[] Organisms, CancellationToken token)
+        {
+            await Task.Run(() => ReproduceGeneration(ref Organisms), token);
+
+            await Task.Run(() => MutateGeneration(), token);
+        }
+
+        /// <summary>
+        /// Adjusts organisms based on their species size using <see cref="FitnessFunction"/>
+        /// </summary>
+        /// <param name="Organisms"></param>
+        private void AdjustOrganisms(ref OrganismStruct[] Organisms)
+        {
+            // first get the population size of all species
+            Span<int> SpeciesSizes = GetSpeciesSizes();
+
+            // get the species of the organism
+            Span<OrganismStruct> OrganismSpan = Organisms;
+
+            int species;
+            int size;
+
+            for (int i = 0; i < OrganismSpan.Length; i++)
+            {
+                ref OrganismStruct organism = ref OrganismSpan[i];
+
+                if (SpeciesDictionary.ContainsKey(organism.Id))
+                {
+                    // get the species
+                    species = SpeciesDictionary[organism.Id];
+
+                    size = SpeciesSizes[species];
+
+                    organism.Fitness = FitnessFunction.AdjustOrganismFitness(ref organism.Fitness, ref size);
+                }
+                else
+                {
+                    throw new Exception($"Missing Organism {organism.Id} from SpeciesDictionary");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the length of each species and puts it into a <see cref="Span{int}"/>
+        /// </summary>
+        /// <returns></returns>
+        private Span<int> GetSpeciesSizes()
+        {
+            Span<int> SpeciesSizeSpan = new int[Species.Length]; ;
+
+            for (int i = 0; i < SpeciesSizeSpan.Length; i++)
+            {
+                SpeciesSizeSpan[i] = _Species[i].Length;
+            }
+
+            return SpeciesSizeSpan;
+        }
+
+        /// <summary>
+        /// Creates the dictionary that associates each organism's Id with it's species
+        /// </summary>
+        /// <param name="SpeciesSource"></param>
+        /// <returns></returns>
+        private IDictionary<int, int> CreateSpeciesDictionary(ref int[][] SpeciesSource)
+        {
+            IDictionary<int, int> SpeciesDict = new Dictionary<int, int>();
+
+            Span<int[]> Species = SpeciesSource;
+
+            for (int i = 0; i < Species.Length; i++)
+            {
+                Span<int> Organisms = Species[i];
+
+                for (int x = 0; x < Organisms.Length; x++)
+                {
+                    SpeciesDict.TryAdd(Organisms[x], i);
+                }
+            }
+
+            return SpeciesDict;
+        }
+
+        private void ReproduceGeneration(ref OrganismStruct[] Organisms)
+        {
+            // sort the organisms and truncate, then reproduce to fill in remaining organisms
+            Span<OrganismStruct> organismSpan = Organisms;
+
+            // sort by DESC
+            organismSpan.Sort((left, right) => right.Fitness.CompareTo(left.Fitness));
+
+            // truncate the poor performing ones
+            var truncatedOrganisms = ReproductionHandler.TruncateOrganisms(ref organismSpan, out Span<OrganismStruct> RemainingOrganisms);
+
+            // generate breeding pairs
+            var pairs = ReproductionHandler.GenerateBreedingPairs(ref RemainingOrganisms);
+
+            int index;
+            int pairsLength = pairs.Length;
+
+            // actually breed the organisms to replace the ones we truncated
+            for (int i = 0; i < truncatedOrganisms.Length; i++)
+            {
+                // becuase there is a chance that we might run out of new pairs by the time we replaced the truncated,
+                // we should just wrap
+                ref var pair = ref pairs[i % pairsLength];
+
+                // create the new organism
+                INeatNetwork newOrganism = CrossNetworks(ref pair.Left, ref pair.Right);
+
+                index = truncatedOrganisms[i].Id;
+
+                // replace the truncated one
+                lock (Generation)
+                {
+                    Generation[index] = newOrganism;
+                }
+            }
+        }
+
+        private void MutateGeneration()
+        {
+            Span<INeatNetwork> networks = Generation;
+
+            for (int i = 0; i < networks.Length; i++)
+            {
+                networks[i].Mutate();
+            }
+        }
+
+        /// <summary>
+        /// Iterates the <paramref name="organismsEvaluationResults"/> and fits the data using <see cref="FitnessFunction"/>
+        /// </summary>
+        /// <param name="organismsEvaluationResults"></param>
+        /// <returns></returns>
+        internal OrganismStruct[] FitEvaluationData(ref double[][] organismsEvaluationResults)
+        {
+            int numOfOrganisms = organismsEvaluationResults.Length;
+
+            OrganismStruct[] result = new OrganismStruct[numOfOrganisms];
+
+            Span<double[]> organisms = organismsEvaluationResults;
+
+            for (int i = 0; i < numOfOrganisms; i++)
+            {
+                result[i] = new OrganismStruct()
+                {
+                    Id = i,
+                    Fitness = FitnessFunction.CalculateFitness(organisms[i])
                 };
             }
 
-            for (int i = 0; i < numberOfSpecies; i++)
-            {
-                token.ThrowIfCancellationRequested();
-                results[i] = CreateResult(i, await EvaluateSpecies(i, DataToEvaluate, token));
-            }
-
-            return (results, TotalFitness);
-        }
-
-        public async Task<double[][]> EvaluateSpecies(int SpeciesIndex, double[] DataToEvaluate, CancellationToken token)
-        {
-            // species array scheme is:
-            // index = species index
-            // value = array
-            //         index = nth organism in species
-            //         value = the index of that orgnism in the Generation Array
-            // 0 = { 1st Orgism, 2nd Organism, 3rd Organism .. }
-            // 1 = { 1st Orgism, 2nd Organism, 3rd Organism .. }
-            int n = Species[SpeciesIndex].Length;
-
-            double[][] result = new double[n][];
-
-            SemaphoreSlim Lock = new(1, 1);
-
-            // Create a generic worker that runs an organism and stores it in the result
-            void Worker(ref int organism, ref int resultIndex)
-            {
-                Lock.Wait(token);
-                try
-                {
-                    result[resultIndex] = Generation[organism].Evaluate(DataToEvaluate);
-                }
-                finally
-                {
-                    Lock.Release();
-                }
-            }
-
-            Task[] tasks = new Task[n];
-
-            // start evalulating all of the species asynchronously 
-            for (int i = 0; i < n; i++)
-            {
-                // create variables that will be available to the state machine when we start these tasks
-                int organism = Species[SpeciesIndex][i];
-                int resultIndex = i;
-
-                tasks[i] = Task.Run(() => Worker(ref organism, ref resultIndex), token);
-            }
-
-            // wait for the tasks to finish
-            await Task.WhenAll(tasks);
-
             return result;
-        }
-
-        /// <summary>
-        /// Begins reproduction of species using <see cref="IReproductionHandler"/> to remove and modify the gene pool. 
-        /// </summary>
-        /// <param name="Fitnesses"></param>
-        /// <param name="GenerationFitness"></param>
-        /// <returns></returns>
-        public async Task Reproduce(ISpeciesFitness<double>[] Fitnesses, double GenerationFitness)
-        {
-            // we should first get which species should and should not reproduce
-            SpeciesReproductionRule[] rules = ReproductionHandler.SelectUnfitSpecies(ref Fitnesses, ref GenerationFitness);
-
-            await Task.Run(() => ReproduceGeneration(ref Fitnesses, ref rules));
-            await Task.Run(() => MutateGeneration(ref Fitnesses, ref rules));
-
-            // now that we have reproduced and mutated we should speciate the new organisms
-            await SpeciateGeneration();
-        }
-
-        private void ReproduceGeneration(ref ISpeciesFitness<double>[] Fitnesses, ref SpeciesReproductionRule[] rules)
-        {
-            // go through the species list and if they are supposed to reproduce kill lower performing children and back-fill with crossed children
-            Span<ISpeciesFitness<double>> fitnessSpan = new(Fitnesses);
-            Span<SpeciesReproductionRule> ruleSpan = new(rules);
-
-            for (int i = 0; i < fitnessSpan.Length; i++)
-            {
-                ReproduceSpecies(ref fitnessSpan[i], ref ruleSpan[i]);
-            }
-        }
-
-        private void MutateGeneration(ref ISpeciesFitness<double>[] Fitnesses, ref SpeciesReproductionRule[] rules)
-        {
-            // mutate the species
-            Span<ISpeciesFitness<double>> fitnessSpan = new(Fitnesses);
-            Span<SpeciesReproductionRule> ruleSpan = new(rules);
-            for (int i = 0; i < fitnessSpan.Length; i++)
-            {
-                MutateSpecies(fitnessSpan[i].Species, ref ruleSpan[i]);
-            }
-        }
-
-        private void ReproduceSpecies(ref ISpeciesFitness<double> Fitness, ref SpeciesReproductionRule rule)
-        {
-            // check if we should reproduce at all, or remove the species..
-            switch (rule)
-            {
-                case SpeciesReproductionRule.Prohibit:
-                    return;
-                case SpeciesReproductionRule.ProhibitWithMutation:
-                    return;
-                case SpeciesReproductionRule.Remove:
-                    RemoveSpecies(Fitness.Species);
-                    return;
-                default:
-                    // allow
-                    break;
-            }
-
-            // carve out memory becuase we will be using these values immediately to construct other spans
-            Span<int> organismSpan = Species[Fitness.Species];
-            Span<double> fitnessSpan = Fitness.Fitnesses;
-
-            // convert to structs
-            Span<OrganismStruct> sortedOrganisms = new OrganismStruct[organismSpan.Length];
-
-            for (int i = 0; i < sortedOrganisms.Length; i++)
-            {
-                sortedOrganisms[i] = new OrganismStruct(organismSpan[i], fitnessSpan[i]);
-            }
-
-            // sort the organisms by fitness
-            sortedOrganisms.Sort((x, y) => y.Fitness.CompareTo(x.Fitness));
-
-            // make room for the new organisms that will be produced when we breed the top performers
-            // get a list of organisms that should be replaced
-            Span<OrganismStruct> truncatedOrganisms = ReproductionHandler.TruncateSpecies(ref sortedOrganisms, out Span<OrganismStruct> remainingOrganisms);
-
-            // convert the remaining organisms to an array so we can replace the species array to avoid having to do weird array resizing and sorting later on
-            int[] newSpeciesArray = new int[remainingOrganisms.Length];
-
-            Span<int> newSpeciesSpan = newSpeciesArray;
-            for (int i = 0; i < newSpeciesSpan.Length; i++)
-            {
-                // OrganismStruct is implicitly convertible to int(it's index)
-                newSpeciesSpan[i] = remainingOrganisms[i];
-            }
-
-            // replace the species array to remove the truncated organisms
-            SpeciesLock.Wait();
-            try
-            {
-                Species[Fitness.Species] = newSpeciesArray;
-            }
-            finally
-            {
-                SpeciesLock.Release();
-            }
-
-            // generate pairs to breed from(this is a span)
-            var breedingPairSpan = ReproductionHandler.GenerateBreedingPairs(ref remainingOrganisms);
-
-            // actually create the new organisms
-            // replace the generation indices with the new organisms
-
-            // get a reference to the network that is our species representative
-            INeatNetwork representative = Generation[SpeciesRepresentatives[Fitness.Species]];
-
-            // keep track of which indicies need to be removed later on
-            int[] differentSpeciesIndicies = Array.Empty<int>();
-
-            // only replace the organisms that were truncated
-            for (int i = 0; i < truncatedOrganisms.Length; i++)
-            {
-                // create new organism
-                int index = i % breedingPairSpan.Length;
-
-                var newNetwork = CrossNetworks(ref breedingPairSpan[index].Left, ref breedingPairSpan[index].Right);
-
-                int id = truncatedOrganisms[i].Id;
-
-                // replace the networks in the main array
-                GenerationLock.Wait();
-                try
-                {
-                    Generation[id] = newNetwork;
-                }
-                finally
-                {
-                    GenerationLock.Release();
-                }
-            }
-        }
-
-        private void MutateSpecies(int SpeciesIndex, ref SpeciesReproductionRule rule)
-        {
-            switch (rule)
-            {
-                case SpeciesReproductionRule.Allow:
-                    break;
-                case SpeciesReproductionRule.PreventMutation:
-                    return;
-                case SpeciesReproductionRule.Prohibit:
-                    return;
-                case SpeciesReproductionRule.ProhibitWithMutation:
-                    break;
-                case SpeciesReproductionRule.Random:
-                    break;
-                case SpeciesReproductionRule.Remove:
-                    return;
-            }
-
-            Span<int> organisms = _Species[SpeciesIndex];
-
-            for (int i = 0; i < organisms.Length; i++)
-            {
-                Generation[organisms[i]].Mutate();
-            }
-        }
-
-        private void RemoveSpecies(int SpeciesIndex)
-        {
-            // mark the indices in the generation array as being replaceable
-            // remove the species from the representative list
-            lock (_Species)
-            {
-                // mark all the species as being available
-                Span<int> species = _Species[SpeciesIndex];
-                for (int i = 0; i < species.Length; i++)
-                {
-                    AvailableGenerationIndices.Enqueue(species[i]);
-                }
-
-                // remove the species from the species array
-                Helpers.Array.RemoveIndex(ref _Species, SpeciesIndex);
-            }
-        }
-
-        /// <summary>
-        /// Calculates the overall fitness for the species and the individual orginsms fitnesses all at once
-        /// <code>
-        /// Complexity: O(n)
-        /// </code>
-        /// </summary>
-        /// <param name="SpeciesEvalResults"></param>
-        /// <returns></returns>
-        public (double[] AdjustedFitnesses, double TotalAdjustedFitness) GetSpeciesFitness(double[][] SpeciesEvalResults)
-        {
-            double[] resultArray = new double[SpeciesEvalResults.Length];
-
-            Span<double> results = new(resultArray);
-
-            for (int i = 0; i < results.Length; i++)
-            {
-                results[i] = FitnessFunction.CalculateFitness(SpeciesEvalResults[i]);
-            }
-
-            results = FitnessFunction.AdjustSpeciesFitness(ref results, out double TotalFitness);
-
-            return (resultArray, TotalFitness);
         }
 
         /// <summary>

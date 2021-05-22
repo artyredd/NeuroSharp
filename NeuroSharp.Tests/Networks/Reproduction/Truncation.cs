@@ -10,7 +10,7 @@ namespace NeuroSharp.Tests
 {
     public class Truncation
     {
-        private readonly IReproductionHandler ReproductionHandler = new DefaultReproductionHandler();
+        private readonly IReproductionHandler<OrganismStruct> ReproductionHandler = new DefaultReproductionHandler<OrganismStruct>();
         [Theory]
         [InlineData(OrganismTruncationMethod.None, 100, 0)]
         [InlineData(OrganismTruncationMethod.Single, 100, 1)]
@@ -41,7 +41,7 @@ namespace NeuroSharp.Tests
             {
                 ReproductionHandler.TrucationMethod = method;
 
-                result = ReproductionHandler.TruncateSpecies(ref organisms, out remaining);
+                result = ReproductionHandler.TruncateOrganisms(ref organisms, out remaining);
             }
 
             Assert.Equal(expected, result.Length);
@@ -91,7 +91,7 @@ namespace NeuroSharp.Tests
 
                 ReproductionHandler.CustomOrganismTruncationPercentage = percentage;
 
-                result = ReproductionHandler.TruncateSpecies(ref organisms, out remaining);
+                result = ReproductionHandler.TruncateOrganisms(ref organisms, out remaining);
             }
 
             expected ??= (int)(percentage * count);
@@ -123,7 +123,7 @@ namespace NeuroSharp.Tests
             {
                 ReproductionHandler.TrucationMethod = OrganismTruncationMethod.Random;
 
-                result = ReproductionHandler.TruncateSpecies(ref organisms, out remaining);
+                result = ReproductionHandler.TruncateOrganisms(ref organisms, out remaining);
             }
 
             // just make sure the amount that is returned is proportional
@@ -161,7 +161,7 @@ namespace NeuroSharp.Tests
                     return x++ < 50;
                 };
 
-                result = ReproductionHandler.TruncateSpecies(ref organisms, out remaining);
+                result = ReproductionHandler.TruncateOrganisms(ref organisms, out remaining);
             }
 
             // since our custom truncator just keesp the ones before 50 and throws away the ones after 50 we should get two 50's

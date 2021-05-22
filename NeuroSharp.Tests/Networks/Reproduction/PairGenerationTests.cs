@@ -10,7 +10,7 @@ namespace NeuroSharp.Tests
 {
     public class PairGenerationTests
     {
-        private readonly IReproductionHandler ReproductionHandler = new DefaultReproductionHandler();
+        private readonly IReproductionHandler<OrganismStruct> ReproductionHandler = new DefaultReproductionHandler<OrganismStruct>();
 
         [Theory]
         [InlineData(OrganismReproductionMethod.Sequential, 5, 1, 2, 3, 4, 5, 1, 2, 2, 3, 3, 4, 4, 5, 5, 1)]
