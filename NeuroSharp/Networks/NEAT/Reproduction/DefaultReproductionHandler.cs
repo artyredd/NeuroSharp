@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace NeuroSharp.NEAT
 {
-    public class DefaultReproductionHandler : IReproductionHandler
+    public class DefaultReproductionHandler<T> : IReproductionHandler<T>
     {
         /// <summary>
         /// The function used to determine whether a species is allowed, prohibited, or removed from a gene pool in the next generation
@@ -20,6 +20,11 @@ namespace NeuroSharp.NEAT
         public OrganismTruncationMethod TrucationMethod { get; set; } = OrganismTruncationMethod.Quarter;
 
         /// <summary>
+        /// Defines how this handler selects parents for crossing.
+        /// </summary>
+        public OrganismReproductionMethod ReproductionMethod { get; set; } = OrganismReproductionMethod.Sequential;
+
+        /// <summary>
         /// The percentage of organisms that should be truncated to make room for more offspring
         /// <code>
         /// Range: 0d - 1d
@@ -27,7 +32,7 @@ namespace NeuroSharp.NEAT
         /// </summary>
         public double CustomOrganismTruncationPercentage { get; set; } = 0.2d;
 
-        public ReferenceFunc<int, bool> CustomOrganismTruncater { get; set; } = (ref int NetworkIndex) => Helpers.NextUDouble() > 0.5d;
+        public ReferenceFunc<T, bool> CustomOrganismTruncater { get; set; } = (ref T organism) => Helpers.Random.NextUDouble() > 0.5d;
 
         /// <summary>
         /// Selects which species should reproduce into the next generation
@@ -64,15 +69,15 @@ namespace NeuroSharp.NEAT
         /// </code>
         /// </para>
         /// </summary>
-        /// <param name="Fitneses"></param>
+        /// <param name="Fitnesses"></param>
         /// <param name="TotalGenerationFitness"></param>
-        public SpeciesReproductionRule[] SelectUnfitSpecies(ref ISpeciesFitness<double>[] Fitneses, ref double TotalGenerationFitness)
+        public SpeciesReproductionRule[] SelectUnfitSpecies(ref ISpeciesFitness<double>[] Fitnesses, ref double TotalGenerationFitness)
         {
-            SpeciesReproductionRule[] rules = new SpeciesReproductionRule[Fitneses.Length];
+            SpeciesReproductionRule[] rules = new SpeciesReproductionRule[Fitnesses.Length];
 
             Span<SpeciesReproductionRule> speciesRules = new(rules);
 
-            Span<ISpeciesFitness<double>> fitnesses = new(Fitneses);
+            Span<ISpeciesFitness<double>> fitnesses = new(Fitnesses);
 
             for (int i = 0; i < fitnesses.Length; i++)
             {
@@ -82,51 +87,229 @@ namespace NeuroSharp.NEAT
             return rules;
         }
 
-        public Span<int> TruncateSpecies(ref Span<int> Organisms)
+        public Span<T> TruncateOrganisms(ref Span<T> Organisms, out Span<T> RemainingOrganisms)
         {
             // truncate the sorted organisms based on the truncation method
+            int index = 0;
+
             switch (TrucationMethod)
             {
                 case OrganismTruncationMethod.None:
-                    return new(Array.Empty<int>());
+                    RemainingOrganisms = Organisms;
+                    return new(Array.Empty<T>());
+
                 case OrganismTruncationMethod.Single:
+                    RemainingOrganisms = Organisms[0..^1];
                     return Organisms[^1..];
+
                 case OrganismTruncationMethod.Quarter:
-                    return Organisms[^(int)(Organisms.Length * 0.75f)..];
+                    index = (int)(Organisms.Length * 0.75f);
+                    break;
+
                 case OrganismTruncationMethod.Third:
-                    return Organisms[^(int)(Organisms.Length * 0.66f)..];
+                    index = (int)(Organisms.Length * 0.66f);
+                    break;
+
                 case OrganismTruncationMethod.Half:
-                    return Organisms[^(int)(Organisms.Length * 0.5f)..];
+                    index = (int)(Organisms.Length * 0.5f);
+                    break;
+
                 case OrganismTruncationMethod.TwoThirds:
-                    return Organisms[^(int)(Organisms.Length * 0.33f)..];
+                    index = (int)(Organisms.Length * 0.33f);
+                    break;
+
                 case OrganismTruncationMethod.ThreeQuarters:
-                    return Organisms[^(int)(Organisms.Length * 0.25f)..];
+                    index = (int)(Organisms.Length * 0.25f);
+                    break;
+
                 case OrganismTruncationMethod.Custom:
-                    return Organisms[^(int)(Organisms.Length * CustomOrganismTruncationPercentage)..];
+                    index = (int)(Organisms.Length * CustomOrganismTruncationPercentage);
+                    break;
                 case OrganismTruncationMethod.Random:
-                    return RandomTruncate(ref Organisms);
+
+                    return RandomTruncate(ref Organisms, out RemainingOrganisms);
+
                 case OrganismTruncationMethod.Bool:
-                    return BoolTruncate(ref Organisms, CustomOrganismTruncater);
+                    return BoolTruncate(ref Organisms, CustomOrganismTruncater, out RemainingOrganisms);
             }
-            throw new NotSupportedException($"Invalid or missing NeuroSharp.OrganismTruncationMethod selected. at Span<int> {nameof(TruncateSpecies)}(ref Span<int> Organisms)");
+
+            index = index >= Organisms.Length ? Organisms.Length : index <= 0 ? 0 : index;
+
+            RemainingOrganisms = Organisms[0..^index];
+
+            return Organisms[^index..];
         }
 
-        internal Span<int> RandomTruncate(ref Span<int> Organisms)
+        public Span<(T Left, T Right)> GenerateBreedingPairs(ref Span<T> EligibleParentOrganisms)
         {
-            return BoolTruncate(ref Organisms, (ref int x) => Helpers.NextUDouble() >= 0.5d);
+            return ReproductionMethod switch
+            {
+                OrganismReproductionMethod.Random =>
+                    BreedingPairs_Random(ref EligibleParentOrganisms),
+
+                OrganismReproductionMethod.RandomSequential =>
+                    BreedingPairs_RandomSequential(ref EligibleParentOrganisms),
+
+                OrganismReproductionMethod.RandomXOR =>
+                    BreedingPairs_RandomXOR(ref EligibleParentOrganisms),
+
+                OrganismReproductionMethod.Sequential =>
+                    BreedingPairs_Sequential(ref EligibleParentOrganisms),
+
+                OrganismReproductionMethod.XOR =>
+                    BreedingPairs_XOR(ref EligibleParentOrganisms),
+
+                _ =>
+                    BreedingPairs_Sequential(ref EligibleParentOrganisms),
+            };
         }
 
-        internal Span<int> BoolTruncate(ref Span<int> Organisms, ReferenceFunc<int, bool> Truncator)
+        internal (T Left, T Right)[] BreedingPairs_Random(ref Span<T> EligibleParentOrganisms)
         {
-            int[] result = Array.Empty<int>();
+            // calc the max pairs that can be generated
+            int rollsNeeded = EligibleParentOrganisms.Length * 2;
+
+            // create a result array
+            var pairs = new (T Left, T Right)[EligibleParentOrganisms.Length];
+
+            // get all the rolls at once to avoid costly locks in the RNG async logic
+            int[] rolls = Helpers.Random.NextIntArray(rollsNeeded, 0, EligibleParentOrganisms.Length);
+
+            // carve out contiguous blocks of memory for our working set to iterate faster
+            Span<(T Left, T Right)> pairSpan = pairs;
+            Span<int> rollSpan = rolls;
+
+            int rollIndex = 0;
+
+            for (int i = 0; i < EligibleParentOrganisms.Length; i++)
+            {
+                int left = rollSpan[rollIndex];
+                int right = rollSpan[rollIndex + 1];
+
+                rollIndex += 2;
+
+                pairSpan[i] = (EligibleParentOrganisms[left], EligibleParentOrganisms[right]);
+            }
+
+            return pairs;
+        }
+
+        internal (T Left, T Right)[] BreedingPairs_RandomSequential(ref Span<T> EligibleParentOrganisms)
+        {
+            int rollsNeeded = EligibleParentOrganisms.Length;
+
+            // create a result array
+            var pairs = new (T Left, T Right)[rollsNeeded];
+
+            int[] rolls = Helpers.Random.NextIntArray(rollsNeeded, 0, EligibleParentOrganisms.Length);
+
+            // carve out contiguous blocks of memory for our working set to iterate faster
+            Span<(T Left, T Right)> pairSpan = pairs;
+            Span<int> rollSpan = rolls;
+
+            for (int i = 0; i < EligibleParentOrganisms.Length; i++)
+            {
+                ref T right = ref EligibleParentOrganisms[rollSpan[i]];
+
+                // the left parent should be sequential, and the right parent should be random
+                pairSpan[i] = (EligibleParentOrganisms[i], right);
+            }
+
+            return pairs;
+        }
+
+        internal (T Left, T Right)[] BreedingPairs_RandomXOR(ref Span<T> EligibleParentOrganisms)
+        {
+            int maxPairs = EligibleParentOrganisms.Length;
+
+            // create a result array
+            var pairs = new (T Left, T Right)[maxPairs];
+
+            int[] rolls = Helpers.Random.NextIntArray(maxPairs, 0, EligibleParentOrganisms.Length);
+
+            // carve out contiguous blocks of memory for our working set to iterate faster
+            Span<(T Left, T Right)> pairSpan = pairs;
+            Span<int> rollSpan = rolls;
+
+            bool random = true;
+            for (int i = 0; i < maxPairs; i++)
+            {
+                ref T left = ref random ? ref EligibleParentOrganisms[i] : ref EligibleParentOrganisms[^i];
+                ref T right = ref EligibleParentOrganisms[rollSpan[i]];
+
+                pairSpan[i] = (left, right);
+
+                // alternate between XORS
+                random = !random;
+            }
+
+            return pairs;
+        }
+
+        internal (T Left, T Right)[] BreedingPairs_Sequential(ref Span<T> EligibleParentOrganisms)
+        {
+            int maxPairs = EligibleParentOrganisms.Length;
+
+            // create a result array
+            var pairs = new (T Left, T Right)[maxPairs];
+
+            // carve out contiguous blocks of memory for our working set to iterate faster
+            Span<(T Left, T Right)> pairSpan = pairs;
+
+            for (int i = 0; i < maxPairs; i++)
+            {
+                int left = i;
+                int right = (i + 1) % maxPairs;
+
+                pairSpan[i] = (EligibleParentOrganisms[left], EligibleParentOrganisms[right]);
+            }
+
+            return pairs;
+        }
+
+        internal (T Left, T Right)[] BreedingPairs_XOR(ref Span<T> EligibleParentOrganisms)
+        {
+            int maxPairs = EligibleParentOrganisms.Length;
+
+            // create a result array
+            var pairs = new (T Left, T Right)[maxPairs];
+
+            // carve out contiguous blocks of memory for our working set to iterate faster
+            Span<(T Left, T Right)> pairSpan = pairs;
+
+            for (int i = 0; i < maxPairs; i++)
+            {
+                pairSpan[i] = (EligibleParentOrganisms[i], EligibleParentOrganisms[^(i + 1)]);
+            }
+
+            return pairs;
+        }
+
+        internal Span<T> RandomTruncate(ref Span<T> Organisms, out Span<T> RemainingOrganisms)
+        {
+            return BoolTruncate(ref Organisms, (ref T x) => Helpers.Random.NextUDouble() >= 0.5d, out RemainingOrganisms);
+        }
+
+        internal Span<T> BoolTruncate(ref Span<T> Organisms, ReferenceFunc<T, bool> Truncator, out Span<T> RemainingOrganisms)
+        {
+            T[] truncated = Array.Empty<T>();
+            T[] persistent = Array.Empty<T>();
+
             for (int i = 0; i < Organisms.Length; i++)
             {
-                if (Truncator(ref i))
+                if (Truncator(ref Organisms[i]))
                 {
-                    Helpers.Array.AppendValue(ref result, ref Organisms[i]);
+                    Helpers.Array.AppendValue(ref truncated, ref Organisms[i]);
+                }
+                else
+                {
+                    Helpers.Array.AppendValue(ref persistent, ref Organisms[i]);
                 }
             }
-            return result;
+
+            RemainingOrganisms = persistent;
+
+            return truncated;
         }
     }
 }

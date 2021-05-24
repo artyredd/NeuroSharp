@@ -23,6 +23,7 @@ namespace NeuroSharp.Tests.NEAT.Evaluations
             double[] inputs = new double[] { 1 };
 
             return;
+
             // evaluate the network
             double[] result = nn.Evaluator.Evaluate(inputs, nn);
 

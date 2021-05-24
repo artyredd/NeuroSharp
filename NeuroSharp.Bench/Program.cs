@@ -10,7 +10,7 @@ using NeuroSharp.Bench;
 using System;
 
 BenchmarkRunner.Run(
-    typeof(ArrayVsList),
+    typeof(LockPerformance),
     DefaultConfig.Instance
     .AddDiagnoser(MemoryDiagnoser.Default)
     .AddExporter(RPlotExporter.Default)

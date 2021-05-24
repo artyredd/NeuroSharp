@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using NeuroSharp;
 using NeuroSharp.Propagation;
+using NeuroSharp.Extensions.Matrix;
 
 namespace NeuroSharp.NEAT
 {

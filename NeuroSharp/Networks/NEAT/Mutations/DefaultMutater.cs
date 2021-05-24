@@ -29,7 +29,7 @@ namespace NeuroSharp.NEAT
             // by default all inputs should be connected to all outputs
             int numberOfConnections = network.InputNodes * network.OutputNodes;
 
-            double[] rolls = await Helpers.NextDoubleArray(numberOfConnections);
+            double[] rolls = await Helpers.Random.NextDoubleArray(numberOfConnections);
 
             // reset the network since we are starting a new one
             network.Reset();
@@ -68,7 +68,7 @@ namespace NeuroSharp.NEAT
 
         public virtual async Task<MutationResult> Mutate(INeatNetwork network)
         {
-            double val = await Helpers.NextUDoubleAsync();
+            double val = await Helpers.Random.NextUDoubleAsync();
 
             MutationResult result = MutationResult.success;
 
@@ -138,8 +138,8 @@ namespace NeuroSharp.NEAT
             }
 
             // get the rolls all at once instead of in a loop since accessing the asynchronous RNG is expensive
-            double[] rolls = await Helpers.NextUDoubleArray(network.Innovations.Length);
-            double[] weights = await Helpers.NextDoubleArray(network.Innovations.Length);
+            double[] rolls = await Helpers.Random.NextUDoubleArray(network.Innovations.Length);
+            double[] weights = await Helpers.Random.NextDoubleArray(network.Innovations.Length);
 
             void _Mutate(double[] rolls, double[] weights)
             {
@@ -222,7 +222,7 @@ namespace NeuroSharp.NEAT
             // get a random layer from the network
             // remember that the output layer is the 0th layer and we can't add a connection originating from an output node, that would create a circular reference and that's bad mmkay
 
-            int startLayer = await Helpers.NextAsync(1, network.NodeLayers.Length);
+            int startLayer = await Helpers.Random.NextAsync(1, network.NodeLayers.Length);
 
             // default the target layer as the output layer becuase we know that prevents circular references
             int targetLayer = 0;
@@ -236,12 +236,12 @@ namespace NeuroSharp.NEAT
                 // if the start layer isn't the last hidden layer that means there is a possibility that we can add a connection between that layer and either another hidden layer or the output layer
                 // it should be noted that this random roll is not inclusive of the upper bounds of the provided value
                 // therefor, although it may appear that the modulo would implement wrapping to the 1st element of the layers it actually wraps to the 0th layer(the output layer) since it's not inclusive, hence the + 1 instead of just using .Length(what i would normally use to wrap the the 0th element)
-                targetLayer = await Helpers.NextAsync(startLayer + 1, network.NodeLayers.Length + 1) % network.NodeLayers.Length;
+                targetLayer = await Helpers.Random.NextAsync(startLayer + 1, network.NodeLayers.Length + 1) % network.NodeLayers.Length;
             }
 
             // now that we have the start and end layers we should choose random nodes from each of those layers
-            int startNodeIndex = await Helpers.NextAsync(0, network.NodeLayers[startLayer].Length);
-            int endNodeIndex = await Helpers.NextAsync(0, network.NodeLayers[targetLayer].Length);
+            int startNodeIndex = await Helpers.Random.NextAsync(0, network.NodeLayers[startLayer].Length);
+            int endNodeIndex = await Helpers.Random.NextAsync(0, network.NodeLayers[targetLayer].Length);
 
             ushort startNode = (ushort)network.NodeLayers[startLayer][startNodeIndex];
             ushort endNode = (ushort)network.NodeLayers[targetLayer][endNodeIndex];
@@ -252,7 +252,7 @@ namespace NeuroSharp.NEAT
                 Enabled = true,
                 InputNode = startNode,
                 OutputNode = endNode,
-                Weight = await Helpers.NextDoubleAsync()
+                Weight = await Helpers.Random.NextDoubleAsync()
             };
 
             // make sure the innovation is not already in our list if its not add it
@@ -282,7 +282,7 @@ namespace NeuroSharp.NEAT
             }
 
             // get a random eligible connection
-            IInnovation connectionToSplit = eligibleConnections[await Helpers.NextAsync(0, eligibleConnections.Length)];
+            IInnovation connectionToSplit = eligibleConnections[await Helpers.Random.NextAsync(0, eligibleConnections.Length)];
 
             // get the nodes id
             ushort newNodeId = network.IncrementNextNodeId();

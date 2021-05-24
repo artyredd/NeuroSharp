@@ -1,0 +1,187 @@
+﻿@inject IJSRuntime JS;
+
+@inherits CanvasBase
+<!--:P-->
+
+<BECanvas Width=@Width Height=@Height @ref=_canvasReference></BECanvas>
+
+@code {
+    [Parameter]
+    public IMatrix<double> Matrix { get; set; } = new NeuroSharp.Double.Matrix(2, 2, new double[] { 0.1, 2, 3.3, 4.44 });
+
+    [Parameter]
+    public float TextSize { get; set; } = 30f;
+
+    [Parameter]
+    public float BracketLineSize { get; set; } = 3f;
+
+    [Parameter]
+    public float TextTruncateWidth { get; set; } = 30f;
+
+    [Parameter]
+    public float HorizontalSpacing { get; set; } = 30f;
+
+    [Parameter]
+    public float VerticalSpacing { get; set; } = 30f;
+
+    [Parameter]
+    public float BracketWidth { get; set; } = 10f;
+
+    [Parameter]
+    public bool FillMatrixBackground { get; set; } = false;
+
+    [Parameter]
+    public string Title { get; set; } = "Matrix";
+
+    [Parameter]
+    public string TextColor { get; set; } = Colors.Black;
+
+
+    [Parameter]
+    public string BracketColor { get; set; } = Colors.Black;
+
+
+    [Parameter]
+    public string MatrixBackgroundColor { get; set; } = Colors.Grey;
+
+    protected Canvas2DContext _context;
+
+    protected BECanvasComponent _canvasReference = new();
+
+    // init values
+    private (float x, float y) TopLeftCorner;
+    private (float x, float y) TextOffset;
+
+    // calced values
+    private float MatrixWidth;
+    private float MatrixHeight;
+    private (float x, float y) BottomRightCorner;
+
+    private void InitializeMatrixValues()
+    {
+        TextOffset = (TextSize / 2, TextSize / 2);
+        TopLeftCorner = (0, 0);
+    }
+
+    public (int Width, int Height) DetermineSize(IMatrix<double> Matrix)
+    {
+        float MatrixWidth = (Matrix.Columns * TextSize) + (HorizontalSpacing * Matrix.Columns);
+        float MatrixHeight = (Matrix.Rows * TextSize) + (VerticalSpacing * Matrix.Rows);
+        return ((int)MatrixWidth, (int)MatrixHeight);
+    }
+
+    public async Task<(float x, float y)> DrawMatrix(IMatrix<double> SourceMatrix, float x, float y)
+    {
+        // make a copy of the matrix
+        IMatrix<double> matrix = SourceMatrix.Duplicate();
+
+        // draw the box
+        MatrixWidth = (matrix.Columns * TextSize) + (HorizontalSpacing * matrix.Columns);
+        MatrixHeight = (matrix.Rows * TextSize) + (VerticalSpacing * matrix.Rows);
+
+        BottomRightCorner = (x + MatrixWidth, y + MatrixHeight);
+
+        float left = x;
+        float right = x + MatrixWidth;
+        float top = y;
+        float bottom = y + MatrixHeight;
+
+        // check if we have to fill the background
+        if (FillMatrixBackground)
+        {
+            await FillBox(x, y, MatrixWidth, MatrixHeight, MatrixBackgroundColor);
+        }
+
+        // draw the numbers
+
+        (float x, float y) pos = (x, y);
+
+        for (int row = 0; row < matrix.Rows; row++)
+        {
+            pos.y = y + TextOffset.y + (row * (TextSize + VerticalSpacing));
+            for (int col = 0; col < matrix.Columns; col++)
+            {
+                pos.x = x + TextOffset.x + (col * (TextTruncateWidth + HorizontalSpacing));
+
+                // round the values to appear pretty
+                double val = matrix[row, col];
+
+                string text = Math.Round(val, 2).ToString();
+
+                // truncate the values
+                if (text.Length > 5)
+                {
+                    text = text[^5..];
+                }
+
+                await DrawText(pos.x, pos.y, text, TextSize, TextColor, TextTruncateWidth + 5f, TextBaseline.Top);
+            }
+        }
+
+        // draw the title of the matrix
+        float textWidth = (float)await MeasureText(Title, TextSize);
+        await DrawText(((right + left) / 2) - (textWidth / 2), top, Title, TextSize, Colors.White, MatrixWidth, TextBaseline.Bottom);
+
+        // draw the left wall
+        await DrawBracket(left, top, bottom - top, true, BracketWidth, BracketColor, BracketLineSize);
+
+        // draw the right wall
+        await DrawBracket(right, top, bottom - top, false, BracketWidth, BracketColor, BracketLineSize);
+
+        return BottomRightCorner;
+    }
+
+    private async Task DrawBracket(
+            float x,
+            float y,
+            float height,
+            bool LeftBracket = true,
+            float width = 10f,
+            string Color = Colors.Black,
+            float lineWidth = 3.0f
+        )
+    {
+        float bottom = y + height;
+        // draw the left wall
+        await Batch(
+                _context.SetStrokeStyleAsync(Color),
+            _context.SetLineWidthAsync(BracketLineSize),
+            _context.MoveToAsync(x + (LeftBracket ? BracketWidth : -BracketWidth), y),
+            _context.LineToAsync(x, y),
+            _context.MoveToAsync(x, y),
+            _context.LineToAsync(x, bottom),
+            _context.MoveToAsync(x, bottom),
+            _context.LineToAsync(x + (LeftBracket ? BracketWidth : -BracketWidth), bottom),
+            _context.StrokeAsync()
+        );
+    }
+
+    public override async Task RedrawCanvas()
+    {
+        (Width, Height) = DetermineSize(Matrix);
+
+        InitializeMatrixValues();
+
+        await DrawMatrix(Matrix, 0, 0);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        (Width, Height) = DetermineSize(Matrix);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            this._context = await this._canvasReference.CreateCanvas2DAsync();
+
+            base.SetContext(_context);
+        }
+
+
+        await RedrawCanvas();
+    }
+}

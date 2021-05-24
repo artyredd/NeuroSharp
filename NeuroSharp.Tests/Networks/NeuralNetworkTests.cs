@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
+using NeuroSharp.Extensions.Matrix;
 
 namespace NeuroSharp.Tests.Networks
 {

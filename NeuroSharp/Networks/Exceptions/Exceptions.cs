@@ -61,5 +61,10 @@ namespace NeuroSharp.Networks
         {
             return new KeyNotFoundException($"Node ({inputNode}) Supposedly has a weight referencing OutputNode({outputNode}) but no innovation was found in the decoded genome.");
         }
+
+        public static Exception InvalidNeatControllerType(string type)
+        {
+            return new InvalidCastException($"Type ({type}) provided did not meet requirements to be used with the default species controller. The type MUST have a public accessor matching the following signature: .ctor(int Rows, int Columns, IInovation[] Genome). By default NeatNeuralNetwork class meets these requirements");
+        }
     }
 }

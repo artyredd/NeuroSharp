@@ -13,7 +13,7 @@ namespace NeuroSharp
         /// <summary>
         /// The default fitness function just averages the outputs and returns the averaged results. Fitness function should be assigned a less arbitrary class for advanced problems. Or not assigned for simpler problems like game decisions.
         /// </summary>
-        ReferenceFunc<double[], double> Function { get; }
+        ReferenceFunc<double[], double> Function { get; set; }
 
         /// <summary>
         /// Calculates the raw fitness of an origisms evaluation results using <see cref="Function"/>
@@ -41,5 +41,7 @@ namespace NeuroSharp
         /// <param name="SpeciesFitnesses"></param>
         /// <returns></returns>
         Span<T> AdjustSpeciesFitness(ref Span<T> SpeciesFitnesses, out T TotalFitness);
+
+        T AdjustOrganismFitness(ref T Fitness, ref int SpeciesSize);
     }
 }

@@ -14,7 +14,7 @@ namespace NeuroSharp.Tests
         {
             for (int i = 0; i < 1_000; i++)
             {
-                double x = Helpers.NextDouble();
+                double x = Helpers.Random.NextDouble();
                 Assert.True(x is < 1d and > -1d);
             }
         }

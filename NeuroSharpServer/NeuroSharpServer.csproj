@@ -12,4 +12,8 @@
 		<ProjectReference Include="..\NeuroSharp\NeuroSharp.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="wwwroot\Enums\" />
+	</ItemGroup>
+
 </Project>

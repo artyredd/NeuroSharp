@@ -32,7 +32,7 @@ namespace NeuroSharp.NEAT
         /// </para>
         /// </para>
         /// </summary>
-        public ReferenceFunc<double[], double> Function { get; set; } = (ref double[] arr) => default;
+        public ReferenceFunc<double[], double> Function { get; set; } = (ref double[] arr) => { throw new Exception("Failed to Adjust organism species, did you forget to provide a method to calculate the fitness for organisms? Set IFitnessFunction<T,U>.Function"); };
 
         public double CalculateFitness(double[] OrginismEvaluationResults)
         {
@@ -108,6 +108,11 @@ namespace NeuroSharp.NEAT
                 sum += numbers[i];
             }
             return sum;
+        }
+
+        public double AdjustOrganismFitness(ref double Fitness, ref int SpeciesSize)
+        {
+            return Fitness / SpeciesSize;
         }
     }
 }

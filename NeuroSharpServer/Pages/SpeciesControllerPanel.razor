@@ -1,0 +1,69 @@
+﻿<div class="card text-center">
+    <div class="card-header">
+        <ul class="nav nav-pills card-header-pills">
+            @for (int i = 0; i < Tabs.Length; i++)
+            {
+                string name = Tabs[i];
+                int tabNum = i;
+                if (activeTab == i)
+                {
+                    <li class="nav-item">
+                        <button class="nav-link active">@name</button>
+                    </li>
+                }
+                else
+                {
+                    <li class="nav-item">
+                        <button class="nav-link" @onclick="() => activeTab = tabNum">@name</button>
+                    </li>
+                }
+            }
+        </ul>
+    </div>
+    <div class="card-body">
+        @if (activeTab is 0)
+        {
+            <ListGroup Title="Network Controller Summary" Items=@SummaryList Colors=@(new BootstrapColor[] { BootstrapColor.warning}) Callbacks=@SummaryCallbacks></ListGroup>
+        }
+        @if (activeTab is 1)
+        {
+
+        }
+
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public SpeciesController<NeatNueralNetwork> Controller { get; set; }
+
+    [Parameter]
+    public Func<Task> ResetController { get; set; }
+
+    string[] Tabs = { "Summary", "Setup", "Species" };
+
+    private int _tab = 0;
+    int activeTab
+    {
+        get => _tab;
+        set
+        {
+            _tab = value;
+            StateHasChanged();
+        }
+    }
+
+    Func<Task>[] SummaryCallbacks => new Func<Task>[]{
+        null,
+        async() => { await NeuroSharp.Helpers.Random.Sleep(); activeTab = 2; },
+        null,
+        async ()=> await ResetController?.Invoke()
+    };
+
+    string[] SummaryList => new string[]{
+            $"<div class=\"my-1\">Total Organisms</div> <span class=\"badge bg-dark\"> {Controller.Generation.Length} / {Controller.MaxPopulation}</span>",
+            $"<div class=\"my-1\">Species</div> <span class=\"badge bg-dark\"> {Controller.Species.Length}</span>",
+            $"<div class=\"d-flex\"><div class=\"w-50\"><div class=\"my-1\">Input Nodes</div> <span class=\"badge bg-dark\"> &#128314; {Controller.InputNodes}</span></div><div class=\"w-50\"><div class=\"my-1\">Output Nodes</div> <span class=\"badge bg-dark\"> &#128315; {Controller.OutputNodes}</span></div></div>",
+            $"<button class=\"btn btn-primary\"><span class=\"oi oi-reload\"></span> Reset</button>",
+        };
+}

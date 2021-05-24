@@ -41,7 +41,7 @@ namespace NeuroSharp.NEAT
 
             disjoint /= N;
 
-            return excess + disjoint + (WeightCoefficient * averageWeight);
+            return Math.Abs(excess + disjoint + (WeightCoefficient * averageWeight));
         }
 
         public VerboseNetworkCompatibilityBreakdown GenerateVerboseCompatibility(INeatNetwork left, INeatNetwork right)
@@ -137,16 +137,16 @@ namespace NeuroSharp.NEAT
                         inheritWholeExcess = false;
 
                         // determine the max disjoint to inherit
-                        if (Helpers.NextUDouble() >= 0.5d && GenomeMatches.LeftDisjoint.Length > 0)
+                        if (Helpers.Random.NextUDouble() >= 0.5d && GenomeMatches.LeftDisjoint.Length > 0)
                         {
-                            amountOfDisjointGenesToInherit = Helpers.Next(0, GenomeMatches.LeftDisjoint.Length);
+                            amountOfDisjointGenesToInherit = Helpers.Random.Next(0, GenomeMatches.LeftDisjoint.Length);
                         }
                         else if (GenomeMatches.RightDisjoint.Length > 0)
                         {
-                            amountOfDisjointGenesToInherit = Helpers.Next(0, GenomeMatches.RightDisjoint.Length);
+                            amountOfDisjointGenesToInherit = Helpers.Random.Next(0, GenomeMatches.RightDisjoint.Length);
                         }
 
-                        amountOfExcessGenesToInherit = Helpers.Next(0, GenomeMatches.Excess.Length + 1);
+                        amountOfExcessGenesToInherit = Helpers.Random.Next(0, GenomeMatches.Excess.Length + 1);
 
                         additionalGenomeSize = amountOfExcessGenesToInherit + amountOfDisjointGenesToInherit;
 
@@ -164,7 +164,7 @@ namespace NeuroSharp.NEAT
             Span<IInnovation> newGenome = new(result);
 
             // get the rolls for the entire genome at once to avoid costly semaphore hits
-            double[] rolls = Helpers.NextUDoubleArray(newGenome.Length).Result;
+            double[] rolls = Helpers.Random.NextUDoubleArray(newGenome.Length).Result;
 
             for (int i = 0; i < startingIndex; i++)
             {
@@ -218,7 +218,7 @@ namespace NeuroSharp.NEAT
 
                 for (int i = 0; i < amountOfExcessGenesToInherit; i++)
                 {
-                    newGenome[i + startingIndex] = excess[(i + Helpers.Next(0, 101)) % amountOfExcessGenesToInherit];
+                    newGenome[i + startingIndex] = excess[(i + Helpers.Random.Next(0, 101)) % amountOfExcessGenesToInherit];
                 }
 
                 int index = startingIndex + amountOfExcessGenesToInherit;
@@ -226,7 +226,7 @@ namespace NeuroSharp.NEAT
                 // now randomly inherit excess genes
                 for (int i = 0; i < amountOfDisjointGenesToInherit; i++)
                 {
-                    if (Helpers.NextUDouble() >= 0.5d)
+                    if (Helpers.Random.NextUDouble() >= 0.5d)
                     {
                         // left
                         if (GenomeMatches.LeftDisjoint.Length - 1 > i)
@@ -303,13 +303,16 @@ namespace NeuroSharp.NEAT
 
             Span<IInnovation> leftInnovations = new(left.Innovations);
 
+            HashSet<string> AlignedHashes = new();
+
             int index = 0;
 
             foreach (var item in leftInnovations)
             {
                 index++;
+                string hash = item.Hash();
                 // check to see if the innovation is contained in both networks, if it is, then it is an aligned gene
-                if (right.InnovationHashes.Contains(item.Hash()))
+                if (right.InnovationHashes.Contains(hash) && AlignedHashes.Add(hash))
                 {
                     // since the hash is in the others list then its aligned
                     Array.Resize(ref Aligned, ++AlignedIndex);
@@ -344,12 +347,13 @@ namespace NeuroSharp.NEAT
             index = 0;
             AlignedIndex = 1;
             ExcessIndex = 0;
-
+            AlignedHashes.Clear();
             foreach (var item in rightInnovations)
             {
                 index++;
+                string hash = item.Hash();
                 // check to see if the innovation is contained in both networks, if it is, then it is an aligned gene
-                if (left.InnovationHashes.Contains(item.Hash()))
+                if (left.InnovationHashes.Contains(hash) && AlignedHashes.Add(hash))
                 {
                     // since the hash is in the others list then its aligned
                     Aligned[AlignedIndex] = item;

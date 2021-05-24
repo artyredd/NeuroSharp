@@ -1,0 +1,59 @@
+﻿<ul class="list-group">
+    @if (Title?.Length is not null or 0)
+    {
+        <li class="list-group-item list-group-item-dark" style="text-align: center; font-weight: bold; font-size: larger;">@((MarkupString)Title)</li>
+    }
+    @for (int i = 0; i < Items.Length; i++)
+    {
+        string text = Items[i].ToString();
+
+        BootstrapColor color = i >= Colors.Length ? default : Colors[i];
+
+        string colorClass = "";
+
+        if (Stripe)
+        {
+            colorClass = $"list-group-item-{(stripeToggle ? "secondary" : "")}";
+            stripeToggle = !stripeToggle;
+        }
+        else if (color != BootstrapColor.none)
+        {
+            colorClass = $"list-group-item-action-{color}";
+        }
+
+        Func<Task> callback = i >= Callbacks.Length ? DefaultTask : Callbacks[i] ?? DefaultTask;
+
+        if (SelectedItem == i)
+        {
+            <li class="list-group-item list-group-item-action @colorClass active" @onclick=callback.Invoke>@((MarkupString)text)</li>
+        }
+        else
+        {
+            <li class="list-group-item list-group-item-action @colorClass" @onclick=callback.Invoke>@((MarkupString)text)</li>
+        }
+    }
+</ul>
+
+@code {
+    [Parameter]
+    public object[] Items { get; set; } = Array.Empty<object>();
+
+    [Parameter]
+    public BootstrapColor[] Colors { get; set; } = Array.Empty<BootstrapColor>();
+
+    [Parameter]
+    public Func<Task>[] Callbacks { get; set; } = Array.Empty<Func<Task>>();
+
+    [Parameter]
+    public int SelectedItem { get; set; } = -1;
+
+    [Parameter]
+    public string Title { get; set; }
+
+    [Parameter]
+    public bool Stripe { get; set; } = false;
+
+    private bool stripeToggle = false;
+
+    Func<Task> DefaultTask = async () => { await NeuroSharp.Helpers.Random.Sleep(); };
+}

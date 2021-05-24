@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using BenchmarkDotNet.Configs;
 using NeuroSharp.Int;
+using NeuroSharp.Extensions.Matrix;
 
 namespace NeuroSharp.Bench
 {

@@ -1,0 +1,29 @@
+﻿<div class="card d-inline-flex mx-1 my-1">
+    <div class="card-header" style="text-align: center;">
+        @((MarkupString)Network.Name)
+        <button class="btn btn-outline-primary" @onclick=ToggleShowId>
+            Id
+        </button>
+        <div>
+            <span class="badge bg-secondary" style="@(showId? "" : "display: none;") ">@Network.Id</span>
+        </div>
+    </div>
+    <div class="card-body text-truncate" style="text-align: center;">
+        <p class="card-text" style="text-align:center;">Innovations <span class="badge bg-primary">@Network.Innovations.Length</span></p>
+        <p class="card-text">Nodes <span class="badge bg-primary">@Network.Count</span></p>
+        <p class="card-text">Layers <span class="badge bg-primary">@Network.NodeLayers.Length</span></p>
+        <NetworkCanvas Network=@Network></NetworkCanvas>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public INeatNetwork Network { get; set; }
+
+    bool showId = false;
+
+    void ToggleShowId()
+    {
+        showId = !showId;
+    }
+}
